@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrinho — Periféricos.shop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+</head>
+<body>
+
+<div class="container py-4">
+  <div class="cabecalho-pagina">
+    <h1>🛒 Meu <span>Carrinho</span></h1>
+  </div>
+  <div class="row g-4" id="conteudo-carrinho"></div>
+</div>
+
+<script src="../js/utilitarios.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  construirNavbar();
+
+  function renderizarCarrinho() {
+    var itens     = carrinho.obter();
+    var container = document.getElementById("conteudo-carrinho");
+
+    if (itens.length === 0) {
+      container.innerHTML =
+        '<div class="col-12"><div class="empty-state" style="padding:5rem 2rem">' +
+          '<div class="empty-icon">🛒</div>' +
+          '<h4>Seu carrinho está vazio</h4>' +
+          '<p>Adicione produtos para continuar.</p>' +
+          '<a href="index.html" class="btn-destaque mt-3 d-inline-block">Ver Produtos</a>' +
+        '</div></div>';
+      return;
+    }
+
+    var subtotal = carrinho.calcularTotal();
+    var frete    = subtotal >= 299 ? 0 : 29.9;
+    var total    = subtotal + frete;
+
+    var htmlItens = "";
+    itensCarrinho = itens;
+    for (var i = 0; i < itens.length; i++) {
+      var item = itens[i];
+      htmlItens +=
+        '<div class="item-carrinho" id="item-' + item.id + '">' +
+          '<img src="' + item.imagem + '" class="item-carrinho-imagem"' +
+            ' onerror="this.src=\'https://placehold.co/70x70/111827/00d4ff?text=P\'"' +
+            ' onclick="window.location.href=\'produto.html?id=' + item.id + '\'" style="cursor:pointer">' +
+          '<div style="flex:1">' +
+            '<div class="item-carrinho-nome">' + item.nome + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--cor-texto-suave);margin-bottom:4px">' + formatar.categoria(item.categoria) + '</div>' +
+            '<div class="item-carrinho-preco">' + formatar.moeda(item.preco) + '</div>' +
+          '</div>' +
+          '<div class="controle-quantidade">' +
+            '<button class="btn-quantidade" onclick="alterarQtd(' + item.id + ',' + (item.quantidade-1) + ')">−</button>' +
+            '<span class="valor-quantidade">' + item.quantidade + '</span>' +
+            '<button class="btn-quantidade" onclick="alterarQtd(' + item.id + ',' + (item.quantidade+1) + ')">+</button>' +
+          '</div>' +
+          '<div style="text-align:right;min-width:80px">' +
+            '<div style="font-family:var(--fonte-titulo);font-weight:600;margin-bottom:6px">' + formatar.moeda(item.preco * item.quantidade) + '</div>' +
+            '<button class="btn-perigo-suave" onclick="removerItem(' + item.id + ')">Remover</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    container.innerHTML =
+      '<div class="col-lg-8">' +
+        '<div class="titulo-secao">Itens (' + itens.length + ')</div>' +
+        '<div class="d-flex flex-column gap-2">' + htmlItens + '</div>' +
+        '<div class="d-flex justify-content-between align-items-center mt-3">' +
+          '<a href="index.html" class="btn-fantasma">← Continuar comprando</a>' +
+          '<button class="btn-perigo-suave" onclick="limparCarrinho()">🗑 Limpar carrinho</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="col-lg-4">' +
+        '<div class="cartao-resumo">' +
+          '<h5>Resumo do Pedido</h5>' +
+          '<div class="linha-resumo"><span>Subtotal</span><span>' + formatar.moeda(subtotal) + '</span></div>' +
+          '<div class="linha-resumo">' +
+            '<span>Frete</span>' +
+            '<span style="color:' + (frete===0?'var(--cor-sucesso)':'inherit') + '">' + (frete===0?'Grátis 🎉':formatar.moeda(frete)) + '</span>' +
+          '</div>' +
+          (frete>0?'<div style="font-size:0.75rem;color:var(--cor-texto-suave);margin-bottom:0.5rem">Frete grátis acima de '+formatar.moeda(299)+'</div>':'') +
+          '<div class="total-resumo"><span>Total</span><span>' + formatar.moeda(total) + '</span></div>' +
+          '<button class="btn-destaque w-100 mt-4 py-2" style="font-size:1rem" onclick="irParaPagamento()">Ir para Pagamento →</button>' +
+          '<div style="text-align:center;font-size:0.75rem;color:var(--cor-texto-suave);margin-top:0.75rem">🔒 Checkout 100% seguro</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function alterarQtd(id, qtd) { carrinho.alterarQuantidade(id, qtd); renderizarCarrinho(); }
+  function removerItem(id)      { carrinho.remover(id); renderizarCarrinho(); notificacao.info("Item removido."); }
+  function limparCarrinho()     { if(confirm("Limpar carrinho?")){ carrinho.limpar(); renderizarCarrinho(); } }
+
+  function irParaPagamento() {
+    if (!autenticacao.estaLogado()) {
+      notificacao.aviso("Faça login para continuar.");
+      setTimeout(function(){ window.location.href = "login.html"; }, 1200);
+      return;
+    }
+    window.location.href = "pagamento.html";
+  }
+
+  renderizarCarrinho();
+</script>
+</body>
+</html>

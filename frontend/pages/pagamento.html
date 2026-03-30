@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento — Periféricos.shop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <style>
+    .metodo-btn {
+      background: #151d2e;
+      border: 2px solid #1e2d45;
+      border-radius: 12px;
+      padding: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      color: #8a9bbf;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .metodo-btn:hover   { border-color: #00d4ff; color: #e8edf5; }
+    .metodo-btn.ativo   { border-color: #00d4ff; background: rgba(0,212,255,0.12); color: #00d4ff; }
+    .metodo-btn .icone  { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+
+    .painel-metodo      { display: none; }
+    .painel-metodo.ativo { display: block; }
+
+    /* Cartão visual */
+    .cartao-visual {
+      background: linear-gradient(135deg, #1a2540 0%, #0d1525 100%);
+      border: 1px solid #1e2d45;
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      min-height: 160px;
+    }
+    .cartao-visual::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: rgba(0,212,255,0.06);
+    }
+    .cartao-visual::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 20px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(0,212,255,0.04);
+    }
+    .cartao-numero-display {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      letter-spacing: 0.2em;
+      color: #e8edf5;
+      margin: 0.75rem 0;
+    }
+    .cartao-nome-display  { font-size: 0.85rem; color: #8a9bbf; text-transform: uppercase; letter-spacing: 0.1em; }
+    .cartao-validade-display { font-size: 0.85rem; color: #8a9bbf; }
+
+    /* QR Code PIX simulado */
+    .qr-container {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: inline-block;
+      margin: 0 auto 1rem;
+    }
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(15, 12px);
+      grid-template-rows:    repeat(15, 12px);
+      gap: 1px;
+    }
+    .qr-cell { border-radius: 1px; }
+
+    /* Código de barras do boleto */
+    .barras {
+      display: flex;
+      gap: 2px;
+      height: 60px;
+      align-items: stretch;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+    .barra { background: #111; border-radius: 1px; }
+
+    /* Passos do checkout */
+    .passos {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 2rem;
+    }
+    .passo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #4a5870;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .passo.ativo  { color: #00d4ff; }
+    .passo.feito  { color: #10b981; }
+    .passo-numero {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #1e2d45;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+    .passo.ativo .passo-numero  { background: #00d4ff; color: #000; }
+    .passo.feito .passo-numero  { background: #10b981; color: #000; }
+    .passo-linha {
+      flex: 1;
+      height: 1px;
+      background: #1e2d45;
+      margin: 0 8px;
+    }
+
+    /* Sucesso */
+    .tela-sucesso { display: none; text-align: center; padding: 2rem; }
+    .icone-sucesso {
+      width: 80px; height: 80px;
+      background: rgba(16,185,129,0.15);
+      border: 2px solid #10b981;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.5rem;
+      animation: pulsar 0.5s ease;
+    }
+    @keyframes pulsar {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-4" style="max-width: 960px">
+
+  <!-- Passos -->
+  <div class="passos">
+    <div class="passo feito">
+      <div class="passo-numero">✓</div> Carrinho
+    </div>
+    <div class="passo-linha"></div>
+    <div class="passo ativo">
+      <div class="passo-numero">2</div> Pagamento
+    </div>
+    <div class="passo-linha"></div>
+    <div class="passo">
+      <div class="passo-numero">3</div> Confirmação
+    </div>
+  </div>
+
+  <!-- Tela principal -->
+  <div id="tela-pagamento">
+    <div class="row g-4">
+
+      <!-- Coluna esquerda: formulário de pagamento -->
+      <div class="col-lg-7">
+        <div style="background:#151d2e;border:1px solid #1e2d45;border-radius:16px;padding:1.5rem">
+
+          <h5 style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid #1e2d45">
+            💳 Escolha a forma de pagamento
+          </h5>
+
+          <!-- Botões de método -->
+          <div class="row g-2 mb-4">
+            <div class="col-4">
+              <div class="metodo-btn ativo" onclick="selecionarMetodo('cartao')">
+                <span class="icone">💳</span>
+                Cartão
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="metodo-btn" onclick="selecionarMetodo('pix')">
+                <span class="icone">📱</span>
+                PIX
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="metodo-btn" onclick="selecionarMetodo('boleto')">
+                <span class="icone">🔖</span>
+                Boleto
+              </div>
+            </div>
+          </div>
+
+          <!-- ── CARTÃO ── -->
+          <div id="painel-cartao" class="painel-metodo ativo">
+
+            <!-- Visualização do cartão -->
+            <div class="cartao-visual">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <span style="font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;color:#00d4ff;letter-spacing:0.05em">PERIFÉRICOS.shop</span>
+                <span id="bandeira-icone" style="font-size:1.8rem">💳</span>
+              </div>
+              <div class="cartao-numero-display" id="exibir-numero">
+                •••• •••• •••• ••••
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-end">
+                <div>
+                  <div class="cartao-nome-display" id="exibir-nome">NOME NO CARTÃO</div>
+                </div>
+                <div>
+                  <div style="font-size:0.65rem;color:#4a5870;margin-bottom:2px">VALIDADE</div>
+                  <div class="cartao-validade-display" id="exibir-validade">MM/AA</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulário -->
+            <div class="mb-3">
+              <label class="form-label">Número do cartão</label>
+              <input type="text" id="num-cartao" class="form-control" placeholder="0000 0000 0000 0000" maxlength="19" oninput="formatarNumeroCartao(this)">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nome no cartão</label>
+              <input type="text" id="nome-cartao" class="form-control" placeholder="NOME COMPLETO" style="text-transform:uppercase" oninput="document.getElementById('exibir-nome').textContent = this.value.toUpperCase() || 'NOME NO CARTÃO'">
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">Validade</label>
+                <input type="text" id="validade-cartao" class="form-control" placeholder="MM/AA" maxlength="5" oninput="formatarValidade(this)">
+              </div>
+              <div class="col-6">
+                <label class="form-label">CVV</label>
+                <input type="text" id="cvv-cartao" class="form-control" placeholder="•••" maxlength="3" oninput="this.value=this.value.replace(/\D/g,'')">
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="form-label">Parcelas</label>
+              <select id="parcelas" class="form-select"></select>
+            </div>
+          </div>
+
+          <!-- ── PIX ── -->
+          <div id="painel-pix" class="painel-metodo">
+            <div style="text-align:center">
+              <p style="color:#8a9bbf;font-size:0.875rem;margin-bottom:1rem">
+                Escaneie o QR Code com o app do seu banco
+              </p>
+              <div class="qr-container">
+                <div class="qr-grid" id="qr-grid"></div>
+              </div>
+              <div style="background:#111827;border:1px solid #1e2d45;border-radius:8px;padding:0.75rem;margin-top:0.75rem">
+                <div style="font-size:0.7rem;color:#4a5870;margin-bottom:4px">Chave PIX copia e cola</div>
+                <div style="font-family:'Courier New',monospace;font-size:0.75rem;color:#00d4ff;word-break:break-all" id="chave-pix">00020126580014br.gov.bcb.pix...</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:1rem;font-size:0.8rem;color:#10b981">
+                <span>⏱</span>
+                <span>QR Code válido por <strong id="contador-pix">14:59</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── BOLETO ── -->
+          <div id="painel-boleto" class="painel-metodo">
+            <div style="text-align:center">
+              <p style="color:#8a9bbf;font-size:0.875rem;margin-bottom:1rem">
+                Pague em qualquer banco, casa lotérica ou pelo app do seu banco
+              </p>
+              <div class="barras" id="barras-boleto"></div>
+              <div style="background:#111827;border:1px solid #1e2d45;border-radius:8px;padding:0.75rem;margin:0.75rem 0">
+                <div style="font-size:0.7rem;color:#4a5870;margin-bottom:4px">Código de barras</div>
+                <div style="font-family:'Courier New',monospace;font-size:0.72rem;color:#e8edf5;word-break:break-all" id="codigo-boleto"></div>
+              </div>
+              <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#f59e0b">
+                ⚠ Vencimento em <strong id="vencimento-boleto"></strong> — o pedido é confirmado após o pagamento
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Coluna direita: resumo -->
+      <div class="col-lg-5">
+        <div style="background:#151d2e;border:1px solid #1e2d45;border-radius:16px;padding:1.5rem;position:sticky;top:80px">
+          <h5 style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid #1e2d45">
+            🛍 Resumo do Pedido
+          </h5>
+          <div id="resumo-itens"></div>
+          <div style="border-top:1px solid #1e2d45;margin-top:0.75rem;padding-top:0.75rem">
+            <div style="display:flex;justify-content:space-between;font-size:0.875rem;color:#8a9bbf;margin-bottom:0.4rem">
+              <span>Subtotal</span><span id="resumo-subtotal">R$ 0,00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.875rem;color:#8a9bbf;margin-bottom:0.75rem">
+              <span>Frete</span><span id="resumo-frete" style="color:#10b981">Grátis</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700">
+              <span>Total</span>
+              <span style="color:#00d4ff" id="resumo-total">R$ 0,00</span>
+            </div>
+          </div>
+
+          <button onclick="finalizarPagamento()" id="botao-pagar"
+            style="width:100%;margin-top:1.25rem;background:#00d4ff;color:#000;border:none;border-radius:8px;padding:0.85rem;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='#fff'" onmouseout="this.style.background='#00d4ff'">
+            <span id="texto-pagar">🔒 CONFIRMAR PAGAMENTO</span>
+            <span id="loading-pagar" style="display:none">Processando...</span>
+          </button>
+
+          <div style="text-align:center;margin-top:0.75rem;font-size:0.72rem;color:#4a5870">
+            🔒 Ambiente 100% simulado — nenhum dado real é processado
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tela de sucesso -->
+  <div class="tela-sucesso" id="tela-sucesso">
+    <div class="icone-sucesso">✓</div>
+    <h2 style="font-family:'Rajdhani',sans-serif;font-size:2rem;margin-bottom:0.5rem">Pedido Confirmado!</h2>
+    <p style="color:#8a9bbf;margin-bottom:0.5rem">Seu pedido foi realizado com sucesso.</p>
+    <p id="msg-metodo-pagamento" style="color:#10b981;font-size:0.875rem;margin-bottom:2rem"></p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="pedidos.html" style="background:#00d4ff;color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Ver Meus Pedidos</a>
+      <a href="index.html"   style="background:#151d2e;border:1px solid #1e2d45;color:#e8edf5;font-family:'Rajdhani',sans-serif;font-weight:600;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Continuar Comprando</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var URL_API      = "http://localhost:3001/api";
+  var metodoPagamento = "cartao";
+  var contadorPix  = null;
+
+  // ── Verifica login e carrinho ──
+  var token = localStorage.getItem("token");
+  if (!token) { window.location.href = "login.html"; }
+
+  var itensCarrinho = [];
+  try { itensCarrinho = JSON.parse(localStorage.getItem("carrinho") || "[]"); } catch(e){}
+  if (!itensCarrinho.length) { window.location.href = "carrinho.html"; }
+
+  // ── Formata moeda ──
+  function moeda(v) {
+    return new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" }).format(v);
+  }
+
+  // ── Renderiza resumo ──
+  function renderizarResumo() {
+    var subtotal = itensCarrinho.reduce(function(s,i){ return s + i.preco * i.quantidade; }, 0);
+    var frete    = subtotal >= 299 ? 0 : 29.9;
+    var total    = subtotal + frete;
+
+    var html = "";
+    itensCarrinho.forEach(function(item) {
+      html +=
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0.65rem">' +
+          '<img src="'+ item.imagem +'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #1e2d45" onerror="this.src=\'https://placehold.co/44x44/111827/00d4ff?text=P\'">' +
+          '<div style="flex:1">' +
+            '<div style="font-size:0.82rem;font-weight:500">' + item.nome + '</div>' +
+            '<div style="font-size:0.75rem;color:#4a5870">× ' + item.quantidade + '</div>' +
+          '</div>' +
+          '<div style="font-family:\'Rajdhani\',sans-serif;font-weight:600;color:#00d4ff">' + moeda(item.preco * item.quantidade) + '</div>' +
+        '</div>';
+    });
+
+    document.getElementById("resumo-itens").innerHTML = html;
+    document.getElementById("resumo-subtotal").textContent = moeda(subtotal);
+    document.getElementById("resumo-frete").textContent    = frete === 0 ? "Grátis 🎉" : moeda(frete);
+    document.getElementById("resumo-total").textContent    = moeda(total);
+
+    // Preenche select de parcelas
+    var selectParcelas = document.getElementById("parcelas");
+    selectParcelas.innerHTML = "";
+    for (var i = 1; i <= 12; i++) {
+      var valorParcela = total / i;
+      var op = document.createElement("option");
+      op.value = i;
+      op.textContent = i + "x de " + moeda(valorParcela) + (i === 1 ? " (sem juros)" : i <= 6 ? " (sem juros)" : " (com juros)");
+      selectParcelas.appendChild(op);
+    }
+  }
+
+  // ── Seleção de método ──
+  function selecionarMetodo(metodo) {
+    metodoPagamento = metodo;
+
+    document.querySelectorAll(".metodo-btn").forEach(function(b) { b.classList.remove("ativo"); });
+    document.querySelectorAll(".painel-metodo").forEach(function(p) { p.classList.remove("ativo"); });
+
+    var btnIdx = { cartao: 0, pix: 1, boleto: 2 }[metodo];
+    document.querySelectorAll(".metodo-btn")[btnIdx].classList.add("ativo");
+    document.getElementById("painel-" + metodo).classList.add("ativo");
+
+    if (metodo === "pix")    iniciarPix();
+    if (metodo === "boleto") gerarBoleto();
+  }
+
+  // ── Formatação do cartão ──
+  function formatarNumeroCartao(input) {
+    var val = input.value.replace(/\D/g, "").substring(0, 16);
+    var formatado = val.replace(/(.{4})/g, "$1 ").trim();
+    input.value = formatado;
+
+    var exibir = val.padEnd(16, "•");
+    var grupos = [];
+    for (var i = 0; i < 16; i += 4) grupos.push(exibir.substring(i, i+4));
+    document.getElementById("exibir-numero").textContent = grupos.join(" ");
+
+    // Detecta bandeira
+    var bandeiras = { "4": "💳 Visa", "5": "💳 Mastercard", "3": "💳 Amex", "6": "💳 Elo" };
+    document.getElementById("bandeira-icone").textContent = (bandeiras[val[0]] || "💳").split(" ")[0];
+  }
+
+  function formatarValidade(input) {
+    var val = input.value.replace(/\D/g, "").substring(0, 4);
+    if (val.length > 2) val = val.substring(0,2) + "/" + val.substring(2);
+    input.value = val;
+    document.getElementById("exibir-validade").textContent = val || "MM/AA";
+  }
+
+  // ── QR Code PIX simulado ──
+  function iniciarPix() {
+    var grid = document.getElementById("qr-grid");
+    grid.innerHTML = "";
+    // Gera padrão pseudoaleatório determinístico para simular QR
+    var semente = 42;
+    for (var i = 0; i < 225; i++) {
+      semente = (semente * 1103515245 + 12345) & 0x7fffffff;
+      var cel = document.createElement("div");
+      cel.className = "qr-cell";
+      // Bordas sempre pretas (simulando finder patterns)
+      var linha = Math.floor(i / 15), col = i % 15;
+      var borda = (linha < 2 || linha > 12 || col < 2 || col > 12) && (linha < 7 || col < 7);
+      cel.style.background = (borda || semente % 3 === 0) ? "#000" : "#fff";
+      grid.appendChild(cel);
+    }
+    // Chave PIX simulada
+    document.getElementById("chave-pix").textContent =
+      "00020126580014br.gov.bcb.pix0136" + gerarUUID() + "5204000053039865802BR5913Perifericos6009SAO PAULO62070503***6304";
+
+    // Contador regressivo
+    if (contadorPix) clearInterval(contadorPix);
+    var segundos = 14 * 60 + 59;
+    contadorPix = setInterval(function() {
+      segundos--;
+      if (segundos <= 0) { clearInterval(contadorPix); return; }
+      var m = Math.floor(segundos / 60);
+      var s = segundos % 60;
+      document.getElementById("contador-pix").textContent =
+        String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    }, 1000);
+  }
+
+  // ── Boleto simulado ──
+  function gerarBoleto() {
+    var barras = document.getElementById("barras-boleto");
+    barras.innerHTML = "";
+    var semente = 99;
+    for (var i = 0; i < 80; i++) {
+      semente = (semente * 6364136223846793005 + 1) & 0xffffffff;
+      var barra = document.createElement("div");
+      barra.className = "barra";
+      barra.style.width  = (semente % 3 === 0 ? 3 : 1.5) + "px";
+      barra.style.height = (semente % 5 === 0 ? 55 : 40) + "px";
+      barras.appendChild(barra);
+    }
+
+    // Código simulado
+    var codigo = "";
+    for (var j = 0; j < 47; j++) {
+      if (j === 9 || j === 19 || j === 30) codigo += " ";
+      codigo += Math.floor(Math.random() * 10);
+    }
+    document.getElementById("codigo-boleto").textContent = codigo;
+
+    // Vencimento (3 dias úteis)
+    var venc = new Date();
+    venc.setDate(venc.getDate() + 3);
+    document.getElementById("vencimento-boleto").textContent = venc.toLocaleDateString("pt-BR");
+  }
+
+  function gerarUUID() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  // ── Finalizar pagamento ──
+  async function finalizarPagamento() {
+    // Validações por método
+    if (metodoPagamento === "cartao") {
+      var num  = document.getElementById("num-cartao").value.replace(/\s/g,"");
+      var nome = document.getElementById("nome-cartao").value.trim();
+      var val  = document.getElementById("validade-cartao").value;
+      var cvv  = document.getElementById("cvv-cartao").value;
+
+      if (num.length < 16)  { alertar("Digite o número completo do cartão."); return; }
+      if (!nome)            { alertar("Digite o nome do titular."); return; }
+      if (val.length < 5)   { alertar("Digite a validade do cartão."); return; }
+      if (cvv.length < 3)   { alertar("Digite o CVV."); return; }
+    }
+
+    document.getElementById("texto-pagar").style.display   = "none";
+    document.getElementById("loading-pagar").style.display = "inline";
+    document.getElementById("botao-pagar").disabled = true;
+
+    // Simula delay de processamento
+    await new Promise(function(r) { setTimeout(r, 2000); });
+
+    var itensParaEnviar = itensCarrinho.map(function(i) {
+      return { productId: i.id, quantity: i.quantidade };
+    });
+
+    try {
+      var resposta = await fetch(URL_API + "/orders", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body:    JSON.stringify({ items: itensParaEnviar, metodoPagamento: metodoPagamento }),
+      });
+      var dados = await resposta.json();
+
+      if (dados.success) {
+        localStorage.removeItem("carrinho");
+        mostrarSucesso();
+      } else {
+        alertar(dados.message || "Erro ao finalizar pedido.");
+        document.getElementById("texto-pagar").style.display   = "inline";
+        document.getElementById("loading-pagar").style.display = "none";
+        document.getElementById("botao-pagar").disabled = false;
+      }
+    } catch(e) {
+      alertar("Erro de conexão com o servidor.");
+      document.getElementById("texto-pagar").style.display   = "inline";
+      document.getElementById("loading-pagar").style.display = "none";
+      document.getElementById("botao-pagar").disabled = false;
+    }
+  }
+
+  function mostrarSucesso() {
+    if (contadorPix) clearInterval(contadorPix);
+    document.getElementById("tela-pagamento").style.display = "none";
+    document.getElementById("tela-sucesso").style.display   = "block";
+
+    // Atualiza passos
+    document.querySelectorAll(".passo")[1].classList.remove("ativo");
+    document.querySelectorAll(".passo")[1].classList.add("feito");
+    document.querySelectorAll(".passo")[1].querySelector(".passo-numero").textContent = "✓";
+    document.querySelectorAll(".passo")[2].classList.add("ativo");
+    document.querySelectorAll(".passo")[2].querySelector(".passo-numero").textContent = "✓";
+
+    var msgs = {
+      cartao: "✅ Pagamento no cartão aprovado!",
+      pix:    "✅ PIX confirmado! O valor já foi debitado.",
+      boleto: "📄 Boleto gerado! Pedido confirmado após o pagamento.",
+    };
+    document.getElementById("msg-metodo-pagamento").textContent = msgs[metodoPagamento] || "";
+  }
+
+  function alertar(msg) {
+    var div = document.getElementById("alerta-pag");
+    if (!div) {
+      div = document.createElement("div");
+      div.id = "alerta-pag";
+      div.style.cssText = "background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:0.65rem 0.9rem;color:#f87171;font-size:0.875rem;margin-bottom:1rem";
+      document.getElementById("painel-" + metodoPagamento).prepend(div);
+    }
+    div.textContent = msg;
+    div.style.display = "block";
+  }
+
+  // Inicia
+  renderizarResumo();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Pedidos — Periféricos.shop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+</head>
+<body>
+
+<div class="container py-4">
+  <div class="cabecalho-pagina">
+    <h1>📦 Meus <span>Pedidos</span></h1>
+  </div>
+  <div id="lista-pedidos"></div>
+</div>
+
+<!-- Modal confirmação cancelamento -->
+<div class="modal fade" id="modal-cancelar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color:var(--cor-erro)">Cancelar Pedido</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.9rem;color:var(--cor-texto-secundario)">
+          Tem certeza que deseja cancelar o <strong id="num-pedido-cancelar" style="color:var(--cor-texto-principal)"></strong>?
+          O estoque dos produtos será devolvido.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-fantasma" data-bs-dismiss="modal">Voltar</button>
+        <button style="background:var(--cor-erro);color:#fff;border:none;border-radius:var(--raio-p);padding:0.4rem 1rem;cursor:pointer" onclick="confirmarCancelamento()">Cancelar Pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/utilitarios.js"></script>
+<script>
+  construirNavbar();
+  if (!autenticacao.exigirLogin()) throw new Error("redirect");
+
+  var idParaCancelar = null;
+
+  var coresStatus = {
+    confirmado: { bg:"rgba(16,185,129,0.15)",  cor:"#10b981", borda:"rgba(16,185,129,0.3)"  },
+    em_preparo: { bg:"rgba(0,212,255,0.15)",   cor:"#00d4ff", borda:"rgba(0,212,255,0.3)"   },
+    enviado:    { bg:"rgba(168,85,247,0.15)",  cor:"#a855f7", borda:"rgba(168,85,247,0.3)"  },
+    entregue:   { bg:"rgba(16,185,129,0.15)",  cor:"#10b981", borda:"rgba(16,185,129,0.3)"  },
+    cancelado:  { bg:"rgba(239,68,68,0.15)",   cor:"#ef4444", borda:"rgba(239,68,68,0.3)"   },
+  };
+
+  var iconeMetodo = { cartao:"💳", pix:"📱", boleto:"🔖" };
+  var nomeMetodo  = { cartao:"Cartão de Crédito", pix:"PIX", boleto:"Boleto Bancário" };
+
+  async function carregarPedidos() {
+    dom.mostrarCarregando("lista-pedidos", "Carregando seus pedidos...");
+    var res = await cliente.buscar("/orders/my");
+
+    if (!res.success) { dom.mostrarVazio("lista-pedidos","⚠","Erro ao carregar",res.message); return; }
+
+    var pedidos = res.data;
+    if (!pedidos || pedidos.length === 0) {
+      document.getElementById("lista-pedidos").innerHTML =
+        '<div class="empty-state" style="padding:5rem 2rem">' +
+          '<div class="empty-icon">📦</div><h4>Nenhum pedido ainda</h4>' +
+          '<p>Você ainda não realizou nenhuma compra.</p>' +
+          '<a href="index.html" class="btn-destaque mt-3 d-inline-block">Ver Produtos</a>' +
+        '</div>';
+      return;
+    }
+
+    var html = '<div class="d-flex flex-column gap-3">';
+    var agora = Date.now();
+
+    pedidos.forEach(function(pedido) {
+      var st    = coresStatus[pedido.status] || coresStatus.confirmado;
+      var horasDesde = (agora - new Date(pedido.createdAt).getTime()) / (1000 * 60 * 60);
+      var podeCancelar = pedido.status !== "cancelado" && pedido.status !== "entregue" && horasDesde <= 24;
+
+      var htmlItens = "";
+      pedido.orderItems.forEach(function(item) {
+        htmlItens +=
+          '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid #1e2d45">' +
+            '<img src="'+(item.product?item.product.image:'')+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #1e2d45" onerror="this.src=\'https://placehold.co/48x48/111827/00d4ff?text=P\'">' +
+            '<div style="flex:1">' +
+              '<div style="font-size:0.875rem;font-weight:500">'+(item.product?item.product.name:"Produto")+'</div>' +
+              '<div style="font-size:0.78rem;color:#4a5870">'+item.quantity+'× '+formatar.moeda(item.price)+'</div>' +
+            '</div>' +
+            '<div style="font-family:var(--fonte-titulo);font-weight:600">'+formatar.moeda(item.price*item.quantity)+'</div>' +
+          '</div>';
+      });
+
+      html +=
+        '<div style="background:#151d2e;border:1px solid #1e2d45;border-radius:16px;overflow:hidden' + (pedido.status==="cancelado"?";opacity:0.7":"") + '">' +
+          // Header
+          '<div style="background:#111827;padding:0.85rem 1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;border-bottom:1px solid #1e2d45">' +
+            '<div style="display:flex;align-items:center;gap:0.75rem">' +
+              '<span style="font-family:var(--fonte-titulo);font-weight:600">Pedido #'+pedido.id+'</span>' +
+              '<span style="font-size:0.8rem;color:#4a5870">'+formatar.data(pedido.createdAt)+'</span>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">' +
+              '<span style="font-size:0.7rem;padding:0.2rem 0.65rem;border-radius:50px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:'+st.bg+';color:'+st.cor+';border:1px solid '+st.borda+'">'+pedido.status.replace("_"," ")+'</span>' +
+              '<span style="font-size:0.8rem;color:#4a5870">'+(iconeMetodo[pedido.metodoPagamento]||"💳")+' '+(nomeMetodo[pedido.metodoPagamento]||pedido.metodoPagamento)+'</span>' +
+              '<span style="font-family:var(--fonte-titulo);font-size:1.1rem;font-weight:700;color:#00d4ff">'+formatar.moeda(pedido.total)+'</span>' +
+            '</div>' +
+          '</div>' +
+          // Itens
+          '<div style="padding:0.75rem 1.25rem">' + htmlItens + '</div>' +
+          // Rodapé com cancelamento
+          (podeCancelar
+            ? '<div style="padding:0.6rem 1.25rem;background:rgba(239,68,68,0.05);border-top:1px solid rgba(239,68,68,0.15);display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:0.75rem;color:#4a5870">⏱ Cancelamento disponível por ' + Math.max(0, Math.round(24 - horasDesde)) + 'h</span>' +
+                '<button class="btn-perigo-suave" style="font-size:0.8rem" onclick="pedirCancelamento('+pedido.id+')">Cancelar Pedido</button>' +
+              '</div>'
+            : (pedido.status !== "cancelado"
+                ? '<div style="padding:0.5rem 1.25rem;border-top:1px solid #1e2d45;font-size:0.72rem;color:#4a5870">Prazo de cancelamento encerrado</div>'
+                : ''
+              )
+          ) +
+        '</div>';
+    });
+
+    html += '</div>';
+    document.getElementById("lista-pedidos").innerHTML = html;
+  }
+
+  function pedirCancelamento(id) {
+    idParaCancelar = id;
+    document.getElementById("num-pedido-cancelar").textContent = "Pedido #" + id;
+    new bootstrap.Modal(document.getElementById("modal-cancelar")).show();
+  }
+
+  async function confirmarCancelamento() {
+    var res = await cliente.requisitar("/orders/" + idParaCancelar + "/cancelar", { method: "PATCH" });
+    bootstrap.Modal.getInstance(document.getElementById("modal-cancelar")).hide();
+
+    if (res.success) {
+      notificacao.sucesso("Pedido cancelado com sucesso!");
+      carregarPedidos();
+    } else {
+      notificacao.erro(res.message || "Erro ao cancelar pedido.");
+    }
+  }
+
+  carregarPedidos();
+</script>
+</body>
+</html>

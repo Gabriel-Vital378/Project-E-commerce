@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Periféricos.shop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <style>
+    /* ── Tabela com cores suaves (sem branco que dói os olhos) ── */
+    .tabela-admin th {
+      background: #0f1520 !important;
+      color: #5a7090 !important;
+      font-size: 0.72rem !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      padding: 0.7rem 1rem !important;
+      border-bottom: 1px solid #1a2535 !important;
+    }
+    .tabela-admin td {
+      padding: 0.7rem 1rem !important;
+      border-bottom: 1px solid rgba(26,37,53,0.6) !important;
+      color: #c8d4e8 !important;
+      font-size: 0.855rem !important;
+    }
+    .tabela-admin tr:hover td { background: #0f1520 !important; }
+
+    /* ── Cards de pedido no admin ── */
+    .card-pedido {
+      background: #111827;
+      border: 1px solid #1a2535;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .card-pedido:hover { border-color: #2a3f5f; }
+
+    .card-pedido-header {
+      background: #0d1525;
+      padding: 0.75rem 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border-bottom: 1px solid #1a2535;
+      cursor: pointer;
+    }
+
+    .card-pedido-body {
+      padding: 0.75rem 1.1rem;
+      display: none;
+    }
+    .card-pedido-body.aberto { display: block; }
+
+    .produto-linha {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #1a2535;
+    }
+    .produto-linha:last-child { border-bottom: none; }
+
+    .badge-status {
+      padding: 0.2rem 0.6rem;
+      border-radius: 50px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .icone-metodo { font-size: 1rem; }
+
+    /* Resumo cards do topo */
+    .card-resumo-admin {
+      background: #111827;
+      border: 1px solid #1a2535;
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+    }
+    .card-resumo-admin .valor {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #00d4ff;
+      line-height: 1;
+    }
+    .card-resumo-admin .rotulo {
+      font-size: 0.75rem;
+      color: #5a7090;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-4">
+
+  <div class="cabecalho-pagina d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h1>⚙ Painel <span>Admin</span></h1>
+      <p style="color:#5a7090;font-size:0.875rem;margin:0">Gerencie produtos, pedidos e avaliações</p>
+    </div>
+    <button class="btn-destaque" onclick="abrirModalProduto(null)">+ Novo Produto</button>
+  </div>
+
+  <!-- Abas -->
+  <div class="abas-filtro mb-0">
+    <button class="aba-filtro ativa" data-aba="produtos"  onclick="alternarAba('produtos')">📦 Produtos</button>
+    <button class="aba-filtro"       data-aba="pedidos"   onclick="alternarAba('pedidos')">🛍 Pedidos</button>
+    <button class="aba-filtro"       data-aba="avaliacoes" onclick="alternarAba('avaliacoes')">⭐ Avaliações</button>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div id="aba-produtos"></div>
+    <div id="aba-pedidos"    style="display:none"></div>
+    <div id="aba-avaliacoes" style="display:none"></div>
+  </div>
+
+</div>
+
+<!-- Modal criar/editar produto -->
+<div class="modal fade" id="modal-produto" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="titulo-modal">Novo Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="produto-id">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Nome do produto *</label>
+            <input type="text" id="produto-nome" class="form-control" placeholder="Ex: Mouse Logitech G502">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Categoria *</label>
+            <select id="produto-categoria" class="form-select">
+              <option value="">Selecione...</option>
+              <option value="mouse">Mouse</option>
+              <option value="teclado">Teclado</option>
+              <option value="headset">Headset</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Preço (R$) *</label>
+            <input type="number" id="produto-preco" class="form-control" placeholder="299.90" step="0.01" min="0">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Estoque *</label>
+            <input type="number" id="produto-estoque" class="form-control" placeholder="10" min="0">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descrição *</label>
+            <textarea id="produto-descricao" class="form-control" rows="3" placeholder="Descreva o produto..."></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">URL da imagem</label>
+            <input type="url" id="produto-imagem" class="form-control" placeholder="https://..." oninput="atualizarPrevia(this.value)">
+            <div style="margin-top:8px">
+              <img id="previa-imagem" src="" style="height:80px;border-radius:8px;display:none;border:1px solid #1a2535">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-fantasma" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-destaque" id="botao-salvar" onclick="salvarProduto()">
+          <span id="texto-salvar">Salvar</span>
+          <span id="texto-salvando" style="display:none">Salvando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de exclusão -->
+<div class="modal fade" id="modal-exclusao" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color:var(--cor-erro)">🗑 Excluir Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p style="color:#8a9bbf;font-size:0.9rem">
+          Tem certeza que deseja excluir
+          <strong id="nome-produto-excluir" style="color:#c8d4e8"></strong>?
+          Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-fantasma" data-bs-dismiss="modal">Cancelar</button>
+        <button style="background:var(--cor-erro);color:#fff;border:none;border-radius:var(--raio-p);padding:0.4rem 1rem;cursor:pointer" onclick="confirmarExclusao()">Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/utilitarios.js"></script>
+<script>
+  construirNavbar();
+  if (!autenticacao.exigirAdmin()) throw new Error("Redirecionando");
+
+  var idParaExcluir = null;
+  var abaAtiva = "produtos";
+
+  // ── Helpers de status e método ──
+  var coresStatus = {
+    confirmado: { bg:"rgba(16,185,129,0.12)",  cor:"#10b981", borda:"rgba(16,185,129,0.25)" },
+    em_preparo: { bg:"rgba(0,212,255,0.12)",   cor:"#00d4ff", borda:"rgba(0,212,255,0.25)"  },
+    enviado:    { bg:"rgba(168,85,247,0.12)",  cor:"#a855f7", borda:"rgba(168,85,247,0.25)" },
+    entregue:   { bg:"rgba(16,185,129,0.12)",  cor:"#10b981", borda:"rgba(16,185,129,0.25)" },
+    cancelado:  { bg:"rgba(239,68,68,0.12)",   cor:"#ef4444", borda:"rgba(239,68,68,0.25)"  },
+  };
+  var iconeMetodo = { cartao:"💳", pix:"📱", boleto:"🔖" };
+  var nomeMetodo  = { cartao:"Cartão", pix:"PIX", boleto:"Boleto" };
+
+  function badgeStatus(status) {
+    var s = coresStatus[status] || coresStatus.confirmado;
+    return '<span class="badge-status" style="background:'+s.bg+';color:'+s.cor+';border:1px solid '+s.borda+'">'+status.replace("_"," ")+'</span>';
+  }
+
+  // ── Troca de aba ──
+  function alternarAba(aba) {
+    abaAtiva = aba;
+    document.querySelectorAll(".aba-filtro").forEach(function(b) {
+      b.classList.toggle("ativa", b.dataset.aba === aba);
+    });
+    document.getElementById("aba-produtos").style.display    = aba === "produtos"   ? "block" : "none";
+    document.getElementById("aba-pedidos").style.display     = aba === "pedidos"    ? "block" : "none";
+    document.getElementById("aba-avaliacoes").style.display  = aba === "avaliacoes" ? "block" : "none";
+
+    if (aba === "produtos")   carregarProdutos();
+    if (aba === "pedidos")    carregarPedidos();
+    if (aba === "avaliacoes") carregarAvaliacoes();
+  }
+
+  // ════════════════════════════════════════
+  // ABA: PRODUTOS
+  // ════════════════════════════════════════
+  async function carregarProdutos() {
+    dom.mostrarCarregando("aba-produtos", "Carregando produtos...");
+    var res = await cliente.buscar("/products?limit=100");
+    if (!res.success) { dom.mostrarVazio("aba-produtos","⚠","Erro",res.message); return; }
+
+    var produtos = res.data;
+    if (!produtos || produtos.length === 0) {
+      dom.mostrarVazio("aba-produtos","📦","Nenhum produto","Crie o primeiro produto clicando no botão acima.");
+      return;
+    }
+
+    var linhas = produtos.map(function(p) {
+      var dadosJson = JSON.stringify(p).replace(/"/g, "&quot;");
+      var corEstoque = p.stock === 0 ? "#ef4444" : p.stock <= 5 ? "#f59e0b" : "#10b981";
+      return (
+        '<tr>' +
+          '<td>' +
+            '<div style="display:flex;align-items:center;gap:10px">' +
+              '<img src="'+p.image+'" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid #1a2535;flex-shrink:0" onerror="this.src=\'https://placehold.co/40x40/0d1525/00d4ff?text=P\'">' +
+              '<div>' +
+                '<div style="font-weight:500;font-size:0.855rem;color:#c8d4e8">'+p.name+'</div>' +
+                '<div style="color:#3a5070;font-size:0.75rem;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.description+'</div>' +
+              '</div>' +
+            '</div>' +
+          '</td>' +
+          '<td><span class="badge-categoria badge-'+p.category+'">'+formatar.categoria(p.category)+'</span></td>' +
+          '<td style="font-family:var(--fonte-titulo);font-weight:600;color:#00d4ff">'+formatar.moeda(p.price)+'</td>' +
+          '<td><span style="color:'+corEstoque+';font-weight:500">'+(p.stock===0?"Esgotado":p.stock)+'</span></td>' +
+          '<td>' +
+            '<div style="display:flex;gap:6px">' +
+              '<button class="btn-fantasma" style="padding:0.22rem 0.6rem;font-size:0.78rem" onclick=\'editarProduto('+dadosJson+')\'>✏ Editar</button>' +
+              '<button class="btn-perigo-suave" style="padding:0.22rem 0.5rem;font-size:0.78rem" onclick="pedirExclusao('+p.id+', \''+p.name.replace(/'/g,"\\'")+'\')" >🗑</button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>'
+      );
+    }).join("");
+
+    document.getElementById("aba-produtos").innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">' +
+        '<span style="color:#5a7090;font-size:0.85rem">'+produtos.length+' produto'+(produtos.length!==1?'s':'')+' cadastrado'+(produtos.length!==1?'s':'')+'</span>' +
+      '</div>' +
+      '<div class="tabela-admin">' +
+        '<table class="table table-borderless mb-0">' +
+          '<thead><tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>' +
+          '<tbody>'+linhas+'</tbody>' +
+        '</table>' +
+      '</div>';
+  }
+
+  function abrirModalProduto(produto) {
+    document.getElementById("titulo-modal").textContent     = produto ? "Editar Produto" : "Novo Produto";
+    document.getElementById("produto-id").value             = produto ? produto.id : "";
+    document.getElementById("produto-nome").value           = produto ? produto.name : "";
+    document.getElementById("produto-categoria").value      = produto ? produto.category : "";
+    document.getElementById("produto-preco").value          = produto ? produto.price : "";
+    document.getElementById("produto-estoque").value        = produto ? produto.stock : "";
+    document.getElementById("produto-descricao").value      = produto ? produto.description : "";
+    document.getElementById("produto-imagem").value         = produto ? produto.image : "";
+    atualizarPrevia(produto ? produto.image : "");
+    new bootstrap.Modal(document.getElementById("modal-produto")).show();
+  }
+
+  function editarProduto(produto) { abrirModalProduto(produto); }
+
+  function atualizarPrevia(url) {
+    var img = document.getElementById("previa-imagem");
+    if (url) { img.src = url; img.style.display = "block"; }
+    else      { img.style.display = "none"; }
+  }
+
+  async function salvarProduto() {
+    var id        = document.getElementById("produto-id").value;
+    var nome      = document.getElementById("produto-nome").value.trim();
+    var categoria = document.getElementById("produto-categoria").value;
+    var preco     = document.getElementById("produto-preco").value;
+    var estoque   = document.getElementById("produto-estoque").value;
+    var descricao = document.getElementById("produto-descricao").value.trim();
+    var imagem    = document.getElementById("produto-imagem").value.trim();
+
+    if (!nome || !categoria || !preco || !descricao) {
+      notificacao.erro("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    document.getElementById("texto-salvar").style.display   = "none";
+    document.getElementById("texto-salvando").style.display = "inline";
+    document.getElementById("botao-salvar").disabled = true;
+
+    var dados = { name:nome, category:categoria, price:Number(preco), stock:Number(estoque||0), description:descricao, image:imagem };
+    var res   = id ? await cliente.atualizar("/products/"+id, dados) : await cliente.enviar("/products", dados);
+
+    document.getElementById("texto-salvar").style.display   = "inline";
+    document.getElementById("texto-salvando").style.display = "none";
+    document.getElementById("botao-salvar").disabled = false;
+
+    if (res.success) {
+      bootstrap.Modal.getInstance(document.getElementById("modal-produto")).hide();
+      notificacao.sucesso(id ? "Produto atualizado!" : "Produto criado!");
+      carregarProdutos();
+    } else {
+      notificacao.erro(res.message || "Erro ao salvar produto.");
+    }
+  }
+
+  function pedirExclusao(id, nome) {
+    idParaExcluir = id;
+    document.getElementById("nome-produto-excluir").textContent = nome;
+    new bootstrap.Modal(document.getElementById("modal-exclusao")).show();
+  }
+
+  async function confirmarExclusao() {
+    var res = await cliente.deletar("/products/" + idParaExcluir);
+    bootstrap.Modal.getInstance(document.getElementById("modal-exclusao")).hide();
+    if (res.success) { notificacao.sucesso("Produto excluído!"); carregarProdutos(); }
+    else             { notificacao.erro(res.message || "Erro ao excluir."); }
+  }
+
+  // ════════════════════════════════════════
+  // ABA: PEDIDOS — visão detalhada por cliente
+  // ════════════════════════════════════════
+  async function carregarPedidos() {
+    dom.mostrarCarregando("aba-pedidos", "Carregando pedidos...");
+    var res = await cliente.buscar("/orders");
+    if (!res.success) { dom.mostrarVazio("aba-pedidos","⚠","Erro",res.message); return; }
+
+    var pedidos = res.data;
+    if (!pedidos || pedidos.length === 0) {
+      dom.mostrarVazio("aba-pedidos","🛍","Nenhum pedido","Os pedidos dos clientes aparecerão aqui.");
+      return;
+    }
+
+    // ── Resumo no topo ──
+    var totalVendido   = pedidos.reduce(function(s,p){ return s + (p.status!=="cancelado"?p.total:0); },0);
+    var totalPedidos   = pedidos.length;
+    var totalCancelados = pedidos.filter(function(p){ return p.status==="cancelado"; }).length;
+    var totalClientes  = new Set(pedidos.map(function(p){ return p.user&&p.user.id; })).size;
+
+    var htmlResumo =
+      '<div class="row g-3 mb-4">' +
+        '<div class="col-6 col-md-3"><div class="card-resumo-admin"><div class="valor">'+formatar.moeda(totalVendido)+'</div><div class="rotulo">Total Vendido</div></div></div>' +
+        '<div class="col-6 col-md-3"><div class="card-resumo-admin"><div class="valor">'+totalPedidos+'</div><div class="rotulo">Pedidos</div></div></div>' +
+        '<div class="col-6 col-md-3"><div class="card-resumo-admin"><div class="valor" style="color:#10b981">'+totalClientes+'</div><div class="rotulo">Clientes</div></div></div>' +
+        '<div class="col-6 col-md-3"><div class="card-resumo-admin"><div class="valor" style="color:#ef4444">'+totalCancelados+'</div><div class="rotulo">Cancelados</div></div></div>' +
+      '</div>';
+
+    // ── Lista de pedidos expansível ──
+    var htmlPedidos = '<div id="lista-pedidos-admin">';
+    pedidos.forEach(function(pedido) {
+      var cancelado = pedido.status === "cancelado";
+
+      // Produtos comprados
+      var htmlProdutos = "";
+      if (pedido.orderItems && pedido.orderItems.length > 0) {
+        pedido.orderItems.forEach(function(item) {
+          var prod = item.product || {};
+          htmlProdutos +=
+            '<div class="produto-linha">' +
+              '<img src="'+(prod.image||'')+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #1a2535;flex-shrink:0" onerror="this.src=\'https://placehold.co/44x44/0d1525/00d4ff?text=P\'">' +
+              '<div style="flex:1">' +
+                '<div style="font-size:0.855rem;font-weight:500;color:#c8d4e8">'+(prod.name||"Produto")+'</div>' +
+                '<div style="font-size:0.75rem;color:#3a5070">' +
+                  '<span class="badge-categoria badge-'+(prod.category||'mouse')+'" style="font-size:0.65rem;padding:0.15rem 0.5rem">'+(prod.category||'—')+'</span>' +
+                  ' · '+item.quantity+'× '+formatar.moeda(item.price) +
+                '</div>' +
+              '</div>' +
+              '<div style="font-family:var(--fonte-titulo);font-weight:600;color:#c8d4e8">'+formatar.moeda(item.price*item.quantity)+'</div>' +
+            '</div>';
+        });
+      }
+
+      htmlPedidos +=
+        '<div class="card-pedido" style="'+(cancelado?"opacity:0.65":"")+'">' +
+          // Header clicável para expandir
+          '<div class="card-pedido-header" onclick="alternarPedido('+pedido.id+')">' +
+            '<div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">' +
+              '<span style="font-family:var(--fonte-titulo);font-weight:700;font-size:0.95rem;color:#c8d4e8">#'+pedido.id+'</span>' +
+              badgeStatus(pedido.status) +
+              '<span style="font-size:0.8rem;color:#5a7090">'+formatar.data(pedido.createdAt)+'</span>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">' +
+              // Cliente
+              '<div style="display:flex;align-items:center;gap:6px">' +
+                '<div style="width:28px;height:28px;border-radius:50%;background:#1a2535;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#5a7090;font-weight:600">' +
+                  ((pedido.user&&pedido.user.name)?pedido.user.name[0].toUpperCase():"?") +
+                '</div>' +
+                '<div>' +
+                  '<div style="font-size:0.8rem;color:#c8d4e8;font-weight:500">'+(pedido.user?pedido.user.name:"—")+'</div>' +
+                  '<div style="font-size:0.7rem;color:#3a5070">'+(pedido.user?pedido.user.email:"")+'</div>' +
+                '</div>' +
+              '</div>' +
+              '<span style="color:#3a5070;font-size:0.8rem">'+(iconeMetodo[pedido.metodoPagamento]||"💳")+' '+(nomeMetodo[pedido.metodoPagamento]||pedido.metodoPagamento)+'</span>' +
+              '<span style="font-family:var(--fonte-titulo);font-size:1.05rem;font-weight:700;color:'+(cancelado?"#ef4444":"#00d4ff")+'">'+formatar.moeda(pedido.total)+'</span>' +
+              '<span style="color:#3a5070;font-size:0.8rem" id="seta-'+pedido.id+'">▼</span>' +
+            '</div>' +
+          '</div>' +
+          // Body com produtos (fechado por padrão)
+          '<div class="card-pedido-body" id="body-'+pedido.id+'">' +
+            '<div style="margin-bottom:0.5rem;font-size:0.75rem;color:#5a7090;text-transform:uppercase;letter-spacing:0.06em">Produtos comprados</div>' +
+            htmlProdutos +
+            '<div style="margin-top:0.75rem;display:flex;justify-content:flex-end;gap:0.5rem">' +
+              '<div style="text-align:right">' +
+                '<div style="font-size:0.75rem;color:#5a7090">Total do pedido</div>' +
+                '<div style="font-family:var(--fonte-titulo);font-size:1.2rem;font-weight:700;color:'+(cancelado?"#ef4444":"#00d4ff")+'">'+formatar.moeda(pedido.total)+'</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    });
+    htmlPedidos += '</div>';
+
+    document.getElementById("aba-pedidos").innerHTML = htmlResumo + htmlPedidos;
+  }
+
+  function alternarPedido(id) {
+    var body = document.getElementById("body-"+id);
+    var seta = document.getElementById("seta-"+id);
+    var aberto = body.classList.toggle("aberto");
+    seta.textContent = aberto ? "▲" : "▼";
+  }
+
+  // ════════════════════════════════════════
+  // ABA: AVALIAÇÕES
+  // ════════════════════════════════════════
+  async function carregarAvaliacoes() {
+    dom.mostrarCarregando("aba-avaliacoes", "Carregando avaliações...");
+
+    // Busca todos os produtos e depois as avaliações de cada um
+    var resProdutos = await cliente.buscar("/products?limit=100");
+    if (!resProdutos.success) { dom.mostrarVazio("aba-avaliacoes","⚠","Erro",resProdutos.message); return; }
+
+    var todasAvaliacoes = [];
+    for (var i = 0; i < resProdutos.data.length; i++) {
+      var prod = resProdutos.data[i];
+      var resAv = await cliente.buscar("/avaliacoes/" + prod.id);
+      if (resAv.success && resAv.data.avaliacoes.length > 0) {
+        resAv.data.avaliacoes.forEach(function(av) {
+          av._nomeProduto     = prod.name;
+          av._categoriaProduto = prod.category;
+          todasAvaliacoes.push(av);
+        });
+      }
+    }
+
+    if (todasAvaliacoes.length === 0) {
+      dom.mostrarVazio("aba-avaliacoes","⭐","Nenhuma avaliação","As avaliações dos clientes aparecerão aqui.");
+      return;
+    }
+
+    // Ordena mais recentes primeiro
+    todasAvaliacoes.sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+
+    var linhas = todasAvaliacoes.map(function(av) {
+      var estrelas = "";
+      for (var s = 1; s <= 5; s++) {
+        estrelas += '<span style="color:'+(s<=av.nota?"#f59e0b":"#1a2535");
+        estrelas += ';font-size:0.8rem">'+(s<=av.nota?"★":"☆")+'</span>';
+      }
+      return (
+        '<tr>' +
+          '<td>' +
+            '<div style="font-weight:500;font-size:0.855rem;color:#c8d4e8">'+av._nomeProduto+'</div>' +
+            '<span class="badge-categoria badge-'+av._categoriaProduto+'" style="font-size:0.65rem;padding:0.15rem 0.5rem">'+formatar.categoria(av._categoriaProduto)+'</span>' +
+          '</td>' +
+          '<td><div style="display:flex;gap:1px">'+estrelas+'</div></td>' +
+          '<td>' +
+            '<div style="font-weight:500;font-size:0.85rem;color:#c8d4e8">'+av.titulo+'</div>' +
+            '<div style="font-size:0.78rem;color:#5a7090;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+av.texto+'</div>' +
+          '</td>' +
+          '<td>' +
+            '<div style="font-size:0.85rem;color:#c8d4e8">'+av.nomeAutor+'</div>' +
+            (av.ficticia
+              ? '<span style="font-size:0.65rem;color:#5a7090;border:1px solid #1a2535;border-radius:50px;padding:1px 6px">Fictícia</span>'
+              : '<span style="font-size:0.65rem;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);border-radius:50px;padding:1px 6px">Verificada</span>'
+            ) +
+          '</td>' +
+          '<td style="color:#3a5070;font-size:0.8rem">'+formatar.data(av.createdAt)+'</td>' +
+        '</tr>'
+      );
+    }).join("");
+
+    document.getElementById("aba-avaliacoes").innerHTML =
+      '<div style="color:#5a7090;font-size:0.85rem;margin-bottom:1rem">'+todasAvaliacoes.length+' avaliação'+(todasAvaliacoes.length!==1?'s':'')+' no total</div>' +
+      '<div class="tabela-admin">' +
+        '<table class="table table-borderless mb-0">' +
+          '<thead><tr><th>Produto</th><th>Nota</th><th>Avaliação</th><th>Autor</th><th>Data</th></tr></thead>' +
+          '<tbody>'+linhas+'</tbody>' +
+        '</table>' +
+      '</div>';
+  }
+
+  // Inicia
+  carregarProdutos();
+</script>
+</body>
+</html>

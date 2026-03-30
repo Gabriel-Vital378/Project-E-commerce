@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produto — Periféricos.shop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <style>
+    .estrela { font-size:1.1rem; cursor:pointer; transition:transform 0.1s; }
+    .estrela:hover { transform:scale(1.2); }
+    .barra-nota { background:#1e2d45; border-radius:4px; height:8px; overflow:hidden; }
+    .barra-nota-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#f59e0b,#fcd34d); transition:width 0.5s; }
+    .cartao-avaliacao {
+      background:#151d2e; border:1px solid #1e2d45;
+      border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="detalhe-produto"></div>
+
+<!-- Modal de avaliação -->
+<div class="modal fade" id="modal-avaliacao" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">⭐ Avaliar Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Sua nota</label>
+          <div id="estrelas-input" style="display:flex;gap:4px;font-size:1.8rem">
+            <span class="estrela" data-nota="1" onclick="selecionarNota(1)">☆</span>
+            <span class="estrela" data-nota="2" onclick="selecionarNota(2)">☆</span>
+            <span class="estrela" data-nota="3" onclick="selecionarNota(3)">☆</span>
+            <span class="estrela" data-nota="4" onclick="selecionarNota(4)">☆</span>
+            <span class="estrela" data-nota="5" onclick="selecionarNota(5)">☆</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Título</label>
+          <input type="text" id="titulo-avaliacao" class="form-control" placeholder="Resumo da sua experiência">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Comentário</label>
+          <textarea id="texto-avaliacao" class="form-control" rows="3" placeholder="Conte o que achou do produto..."></textarea>
+        </div>
+        <div id="alerta-avaliacao" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.6rem 0.9rem;color:#f87171;font-size:0.85rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-fantasma" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-destaque" id="botao-avaliar" onclick="enviarAvaliacao()">
+          <span id="texto-avaliar">Enviar Avaliação</span>
+          <span id="loading-avaliar" style="display:none">Enviando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/utilitarios.js"></script>
+<script>
+  construirNavbar();
+
+  var params      = new URLSearchParams(window.location.search);
+  var idProduto   = params.get("id");
+  var produtoAtual      = null;
+  var qtdSelecionada    = 1;
+  var notaSelecionada   = 0;
+
+  if (!idProduto) window.location.href = "index.html";
+
+  // ── Carrega produto ──
+  async function carregarProduto() {
+    var container = document.getElementById("detalhe-produto");
+    container.innerHTML = '<div class="container py-5"><div class="loading-overlay"><div class="spinner"></div><span>Carregando produto...</span></div></div>';
+
+    var res = await cliente.buscar("/products/" + idProduto);
+    if (!res.success) {
+      container.innerHTML = '<div class="container py-5"><div class="empty-state"><div class="empty-icon">⚠</div><h4>Produto não encontrado</h4><a href="index.html" class="btn-destaque mt-3 d-inline-block">← Voltar</a></div></div>';
+      return;
+    }
+    produtoAtual = res.data;
+    renderizarProduto(produtoAtual);
+    carregarAvaliacoes();
+  }
+
+  function renderizarProduto(p) {
+    var cls  = { mouse:"badge-mouse", teclado:"badge-teclado", headset:"badge-headset" }[p.category] || "";
+    var clsE = p.stock === 0 ? "esgotado" : p.stock <= 5 ? "baixo" : "";
+    var txE  = p.stock === 0 ? "Esgotado" : p.stock <= 5 ? "Apenas "+p.stock+" em estoque!" : p.stock+" em estoque";
+    var icE  = p.stock === 0 ? "❌" : p.stock <= 5 ? "⚠" : "✓";
+
+    document.getElementById("detalhe-produto").innerHTML =
+      '<div class="container py-4">' +
+        '<nav style="font-size:0.82rem;color:var(--cor-texto-suave);margin-bottom:1.5rem">' +
+          '<a href="index.html" style="color:var(--cor-texto-suave)">Produtos</a> › ' +
+          '<span class="badge-categoria '+cls+'">'+formatar.categoria(p.category)+'</span> › ' +
+          '<span style="color:var(--cor-texto-secundario)">'+p.name+'</span>' +
+        '</nav>' +
+        '<div class="row g-4 align-items-start">' +
+          '<div class="col-lg-5">' +
+            '<div style="background:var(--cor-fundo-cartao);border:1px solid var(--cor-borda);border-radius:var(--raio-g);overflow:hidden;aspect-ratio:4/3">' +
+              '<img src="'+p.image+'" alt="'+p.name+'" style="width:100%;height:100%;object-fit:cover" onerror="this.src=\'https://placehold.co/600x450/111827/00d4ff?text=Produto\'">' +
+            '</div>' +
+          '</div>' +
+          '<div class="col-lg-7">' +
+            '<span class="badge-categoria '+cls+'" style="margin-bottom:0.75rem;display:inline-block">'+formatar.categoria(p.category)+'</span>' +
+            '<h1 style="font-family:var(--fonte-titulo);font-size:1.8rem;font-weight:700;line-height:1.2;margin-bottom:0.5rem">'+p.name+'</h1>' +
+            '<div id="media-produto" style="margin-bottom:1rem"></div>' +
+            '<div style="font-size:2.2rem;font-family:var(--fonte-titulo);font-weight:700;color:var(--cor-destaque);margin-bottom:0.5rem">'+formatar.moeda(p.price)+'</div>' +
+            '<span class="estoque-produto '+clsE+'" style="font-size:0.85rem;display:block;margin-bottom:1.5rem">'+icE+' '+txE+'</span>' +
+            '<div style="background:var(--cor-fundo-secundario);border:1px solid var(--cor-borda);border-radius:var(--raio-m);padding:1.2rem;margin-bottom:1.5rem">' +
+              '<h5 style="font-family:var(--fonte-titulo);font-size:0.95rem;color:var(--cor-texto-secundario);margin-bottom:0.5rem">DESCRIÇÃO</h5>' +
+              '<p style="color:var(--cor-texto-principal);font-size:0.9rem;line-height:1.7;margin:0">'+p.description+'</p>' +
+            '</div>' +
+            (p.stock > 0
+              ? '<div class="d-flex align-items-center gap-3 mb-3">' +
+                  '<span style="color:var(--cor-texto-secundario);font-size:0.875rem">Quantidade:</span>' +
+                  '<div class="controle-quantidade">' +
+                    '<button class="btn-quantidade" onclick="alterarQtd(-1)">−</button>' +
+                    '<span class="valor-quantidade" id="exibir-qtd">1</span>' +
+                    '<button class="btn-quantidade" onclick="alterarQtd(1)">+</button>' +
+                  '</div>' +
+                  '<span style="color:var(--cor-texto-suave);font-size:0.8rem">(máx. '+p.stock+')</span>' +
+                '</div>' +
+                '<div style="color:var(--cor-texto-secundario);font-size:0.875rem;margin-bottom:1.25rem">Subtotal: <strong id="subtotal-prod" style="color:var(--cor-destaque)">'+formatar.moeda(p.price)+'</strong></div>' +
+                '<div class="d-flex gap-2 flex-wrap">' +
+                  '<button class="btn-destaque" style="padding:0.65rem 1.5rem" onclick="adicionarCarrinho()">🛒 Adicionar ao Carrinho</button>' +
+                  '<a href="index.html" class="btn-fantasma" style="padding:0.65rem 1.25rem">← Voltar</a>' +
+                '</div>'
+              : '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--raio-p);padding:0.75rem 1rem;color:#f87171;margin-bottom:1rem">❌ Produto indisponível no momento.</div>' +
+                '<a href="index.html" class="btn-fantasma">← Ver outros produtos</a>'
+            ) +
+          '</div>' +
+        '</div>' +
+        // Seção de avaliações
+        '<div style="margin-top:3rem">' +
+          '<div class="titulo-secao">⭐ Avaliações dos Clientes</div>' +
+          '<div id="secao-avaliacoes"></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function alterarQtd(delta) {
+    qtdSelecionada = Math.max(1, Math.min(qtdSelecionada + delta, produtoAtual.stock));
+    document.getElementById("exibir-qtd").textContent = qtdSelecionada;
+    document.getElementById("subtotal-prod").textContent = formatar.moeda(produtoAtual.price * qtdSelecionada);
+  }
+
+  function adicionarCarrinho() { carrinho.adicionar(produtoAtual, qtdSelecionada); }
+
+  // ── Avaliações ──
+  async function carregarAvaliacoes() {
+    var res = await cliente.buscar("/avaliacoes/" + idProduto);
+    if (!res.success) return;
+
+    var { avaliacoes, media, total } = res.data;
+
+    // Exibe média no topo
+    var mediaEl = document.getElementById("media-produto");
+    if (mediaEl && total > 0) {
+      mediaEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-family:var(--fonte-titulo);font-size:1.5rem;font-weight:700;color:#f59e0b">' + media.toFixed(1) + '</span>' +
+          '<div>' +
+            renderizarEstrelas(media, false) +
+            '<div style="font-size:0.75rem;color:var(--cor-texto-suave)">' + total + ' avaliação' + (total>1?'es':'') + '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    renderizarSecaoAvaliacoes(avaliacoes, media, total);
+  }
+
+  function renderizarEstrelas(nota, clicavel) {
+    var html = '<div style="display:flex;gap:2px">';
+    for (var i = 1; i <= 5; i++) {
+      html += '<span style="color:' + (i <= Math.round(nota) ? '#f59e0b' : '#1e2d45') + ';font-size:0.9rem">' + (i <= Math.round(nota) ? '★' : '☆') + '</span>';
+    }
+    return html + '</div>';
+  }
+
+  function renderizarSecaoAvaliacoes(avaliacoes, media, total) {
+    var container = document.getElementById("secao-avaliacoes");
+    if (!container) return;
+
+    var logado = autenticacao.estaLogado();
+
+    // Distribuição de notas
+    var contagem = [0,0,0,0,0];
+    avaliacoes.forEach(function(a){ contagem[a.nota-1]++; });
+
+    var htmlDistribuicao = "";
+    for (var n = 5; n >= 1; n--) {
+      var pct = total > 0 ? (contagem[n-1] / total * 100) : 0;
+      htmlDistribuicao +=
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+          '<span style="font-size:0.75rem;color:#8a9bbf;min-width:12px">' + n + '</span>' +
+          '<span style="color:#f59e0b;font-size:0.75rem">★</span>' +
+          '<div class="barra-nota" style="flex:1"><div class="barra-nota-fill" style="width:' + pct + '%"></div></div>' +
+          '<span style="font-size:0.72rem;color:#4a5870;min-width:24px">' + contagem[n-1] + '</span>' +
+        '</div>';
+    }
+
+    var htmlAvaliacoes = "";
+    if (avaliacoes.length === 0) {
+      htmlAvaliacoes = '<div class="empty-state" style="padding:2rem"><div class="empty-icon" style="font-size:2rem">💬</div><h4 style="font-size:1rem">Nenhuma avaliação ainda</h4><p>Seja o primeiro a avaliar!</p></div>';
+    } else {
+      avaliacoes.forEach(function(av) {
+        htmlAvaliacoes +=
+          '<div class="cartao-avaliacao">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+              '<div>' +
+                '<div style="font-weight:600;font-size:0.9rem">' + av.nomeAutor + (av.ficticia ? '' : ' <span style="font-size:0.65rem;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:50px;padding:1px 6px">Compra verificada</span>') + '</div>' +
+                renderizarEstrelas(av.nota, false) +
+              '</div>' +
+              '<span style="font-size:0.72rem;color:#4a5870">' + formatar.data(av.createdAt) + '</span>' +
+            '</div>' +
+            '<div style="font-weight:600;font-size:0.875rem;margin-bottom:4px">' + av.titulo + '</div>' +
+            '<div style="font-size:0.85rem;color:#8a9bbf;line-height:1.5">' + av.texto + '</div>' +
+          '</div>';
+      });
+    }
+
+    container.innerHTML =
+      '<div class="row g-4 mb-4">' +
+        (total > 0
+          ? '<div class="col-md-4">' +
+              '<div style="background:#151d2e;border:1px solid #1e2d45;border-radius:12px;padding:1.25rem">' +
+                '<div style="text-align:center;margin-bottom:1rem">' +
+                  '<div style="font-family:var(--fonte-titulo);font-size:3rem;font-weight:700;color:#f59e0b;line-height:1">' + media.toFixed(1) + '</div>' +
+                  '<div>' + renderizarEstrelas(media, false) + '</div>' +
+                  '<div style="font-size:0.8rem;color:#4a5870;margin-top:4px">' + total + ' avaliação' + (total>1?'es':'') + '</div>' +
+                '</div>' +
+                htmlDistribuicao +
+              '</div>' +
+            '</div>' +
+            '<div class="col-md-8">'
+          : '<div class="col-12">'
+        ) +
+          (logado
+            ? '<div style="background:#151d2e;border:1px solid #1e2d45;border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:0.875rem;color:#8a9bbf">Comprou este produto? Deixe sua avaliação!</span>' +
+                '<button class="btn-destaque" style="padding:0.4rem 1rem;font-size:0.875rem" onclick="abrirModalAvaliacao()">⭐ Avaliar</button>' +
+              '</div>'
+            : '<div style="background:#151d2e;border:1px solid #1e2d45;border-radius:12px;padding:1rem;margin-bottom:1rem;font-size:0.875rem;color:#4a5870">' +
+                '🔒 <a href="login.html" style="color:#00d4ff">Faça login</a> para avaliar este produto.' +
+              '</div>'
+          ) +
+          htmlAvaliacoes +
+        '</div>' +
+      '</div>';
+  }
+
+  // ── Modal de avaliação ──
+  function abrirModalAvaliacao() {
+    notaSelecionada = 0;
+    atualizarEstrelas(0);
+    document.getElementById("titulo-avaliacao").value = "";
+    document.getElementById("texto-avaliacao").value  = "";
+    document.getElementById("alerta-avaliacao").style.display = "none";
+    new bootstrap.Modal(document.getElementById("modal-avaliacao")).show();
+  }
+
+  function selecionarNota(nota) {
+    notaSelecionada = nota;
+    atualizarEstrelas(nota);
+  }
+
+  function atualizarEstrelas(nota) {
+    document.querySelectorAll("#estrelas-input .estrela").forEach(function(el, i) {
+      el.textContent = i < nota ? "★" : "☆";
+      el.style.color = i < nota ? "#f59e0b" : "#4a5870";
+    });
+  }
+
+  async function enviarAvaliacao() {
+    var titulo = document.getElementById("titulo-avaliacao").value.trim();
+    var texto  = document.getElementById("texto-avaliacao").value.trim();
+    var alertEl = document.getElementById("alerta-avaliacao");
+
+    if (!notaSelecionada) { alertEl.textContent="Selecione uma nota."; alertEl.style.display="block"; return; }
+    if (!titulo)          { alertEl.textContent="Digite um título.";    alertEl.style.display="block"; return; }
+    if (!texto)           { alertEl.textContent="Escreva um comentário."; alertEl.style.display="block"; return; }
+
+    document.getElementById("texto-avaliar").style.display   = "none";
+    document.getElementById("loading-avaliar").style.display = "inline";
+    document.getElementById("botao-avaliar").disabled = true;
+
+    var res = await cliente.enviar("/avaliacoes/" + idProduto, { nota: notaSelecionada, titulo: titulo, texto: texto });
+
+    document.getElementById("texto-avaliar").style.display   = "inline";
+    document.getElementById("loading-avaliar").style.display = "none";
+    document.getElementById("botao-avaliar").disabled = false;
+
+    if (res.success) {
+      bootstrap.Modal.getInstance(document.getElementById("modal-avaliacao")).hide();
+      notificacao.sucesso("Avaliação enviada! Obrigado 😊");
+      carregarAvaliacoes();
+    } else {
+      alertEl.textContent    = res.message || "Erro ao enviar avaliação.";
+      alertEl.style.display  = "block";
+    }
+  }
+
+  carregarProduto();
+</script>
+</body>
+</html>
