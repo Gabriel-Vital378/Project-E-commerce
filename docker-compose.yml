@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+
+# ─── Volumes ──────────────────────────────────────────────────────────
+volumes:
+  db_data:
+
+# ─── Rede interna ─────────────────────────────────────────────────────
+networks:
+  ecommerce_net:
+    driver: bridge
