@@ -452,9 +452,9 @@
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/orders/1/cancelar",
+              "raw": "{{base_url}}/orders/{{order_id}}/cancelar",
               "host": ["{{base_url}}"],
-              "path": ["orders", "1", "cancelar"]
+              "path": ["orders", "{{order_id}}", "cancelar"]
             },
             "description": "Cancela um pedido e devolve o estoque dos produtos.\n\n**Requer:** Token no header.\n\n**Regras:**\n- Cliente pode cancelar apenas seus próprios pedidos\n- Cancelamento disponível em até 24h após a criação\n- Pedidos com status 'entregue' ou 'cancelado' não podem ser cancelados\n- Admin pode cancelar qualquer pedido a qualquer momento\n- O estoque é devolvido automaticamente via transação atômica"
           },
