@@ -1,0 +1,586 @@
+{
+  "info": {
+    "name": "Periféricos.shop — API",
+    "_postman_id": "perifericos-shop-api-v1",
+    "description": "Coleção completa da API REST do e-commerce Periféricos.shop.\n\n**Como usar:**\n1. Importe este arquivo no Postman\n2. Configure a variável `base_url` como `http://localhost:3001/api`\n3. Faça login em Auth > Login e copie o token retornado\n4. Cole o token na variável `token`\n\n**Contas de teste:**\n- Admin: admin@perifericos.com / admin123\n- Cliente: cliente@email.com / cliente123",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string",
+      "description": "URL base da API. Altere se rodar em outra porta."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT gerado no login. Cole aqui após autenticar."
+    },
+    {
+      "key": "token_admin",
+      "value": "",
+      "type": "string",
+      "description": "JWT do admin. Cole aqui após login com admin@perifericos.com"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Autenticação",
+      "description": "Rotas de registro, login e perfil do usuário logado.",
+      "item": [
+        {
+          "name": "Registrar novo usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"password\": \"senha123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Cria uma nova conta de cliente. Role é sempre 'client' por padrão.\n\n**Validações:**\n- name, email e password são obrigatórios\n- password mínimo de 6 caracteres\n- email deve ser único\n\n**Resposta de sucesso (201):** Retorna o usuário criado e o JWT para uso imediato."
+          },
+          "response": [
+            {
+              "name": "✅ Sucesso (201)",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Conta criada com sucesso! Bem-vindo(a)!\",\n  \"data\": {\n    \"user\": {\n      \"id\": 3,\n      \"name\": \"João Silva\",\n      \"email\": \"joao@email.com\",\n      \"role\": \"client\",\n      \"createdAt\": \"2025-06-01T14:30:00.000Z\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            },
+            {
+              "name": "❌ Email já cadastrado (409)",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Este email já está cadastrado\"\n}"
+            },
+            {
+              "name": "❌ Campos faltando (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Nome, email e senha são obrigatórios\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@email.com\",\n  \"password\": \"cliente123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Autentica o usuário e retorna o JWT.\n\n**Após o login:** Copie o valor de `data.token` e cole na variável `token` da coleção.\n\n**Para login admin:** Use admin@perifericos.com / admin123 e cole em `token_admin`."
+          },
+          "response": [
+            {
+              "name": "✅ Login cliente (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login realizado com sucesso!\",\n  \"data\": {\n    \"user\": {\n      \"id\": 2,\n      \"name\": \"Cliente Teste\",\n      \"email\": \"cliente@email.com\",\n      \"role\": \"client\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJjbGllbnRlQGVtYWlsLmNvbSIsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDYwNDgwMH0.xxx\"\n  }\n}"
+            },
+            {
+              "name": "✅ Login admin (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login realizado com sucesso!\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"Administrador\",\n      \"email\": \"admin@perifericos.com\",\n      \"role\": \"admin\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBwZXJpZmVyaWNvcy5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDYwNDgwMH0.xxx\"\n  }\n}"
+            },
+            {
+              "name": "❌ Senha incorreta (401)",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email ou senha incorretos\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Meu perfil (me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Retorna os dados do usuário autenticado pelo token JWT.\n\n**Requer:** Token no header Authorization."
+          },
+          "response": [
+            {
+              "name": "✅ Sucesso (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Dados do usuário recuperados\",\n  \"data\": {\n    \"id\": 2,\n    \"email\": \"cliente@email.com\",\n    \"role\": \"client\"\n  }\n}"
+            },
+            {
+              "name": "❌ Token ausente (401)",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Token de autenticação não fornecido\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📦 Produtos",
+      "description": "CRUD completo de produtos. Listagem e detalhes são públicos. Criar, editar e excluir exigem perfil admin.",
+      "item": [
+        {
+          "name": "Listar todos os produtos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products?page=1&limit=12",
+              "host": ["{{base_url}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page",     "value": "1",      "description": "Página atual (padrão: 1)" },
+                { "key": "limit",    "value": "12",     "description": "Itens por página (padrão: 12)" },
+                { "key": "category", "value": "mouse",  "description": "Filtrar por categoria: mouse | teclado | headset", "disabled": true },
+                { "key": "search",   "value": "logitech","description": "Busca por nome ou descrição", "disabled": true }
+              ]
+            },
+            "description": "Lista produtos com suporte a filtro por categoria, busca textual e paginação.\n\n**Query params opcionais:**\n- `category`: mouse | teclado | headset\n- `search`: termo de busca (nome ou descrição)\n- `page`: número da página (padrão 1)\n- `limit`: itens por página (padrão 12)\n\n**Rota pública** — não exige autenticação."
+          },
+          "response": [
+            {
+              "name": "✅ Lista paginada (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Produtos recuperados com sucesso\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Mouse Logitech G502 X Plus\",\n      \"description\": \"Mouse gamer sem fio com sensor HERO 25K...\",\n      \"price\": 549.9,\n      \"category\": \"mouse\",\n      \"image\": \"https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400\",\n      \"stock\": 15,\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2025-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 12,\n    \"page\": 1,\n    \"limit\": 12,\n    \"totalPages\": 1\n  }\n}"
+            },
+            {
+              "name": "✅ Filtrado por categoria (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Produtos recuperados com sucesso\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Mouse Logitech G502 X Plus\",\n      \"price\": 549.9,\n      \"category\": \"mouse\",\n      \"stock\": 15\n    }\n  ],\n  \"pagination\": {\n    \"total\": 4,\n    \"page\": 1,\n    \"limit\": 12,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Buscar produto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["products", "1"]
+            },
+            "description": "Retorna os dados completos de um produto específico.\n\n**Rota pública** — não exige autenticação."
+          },
+          "response": [
+            {
+              "name": "✅ Produto encontrado (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operação realizada com sucesso\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Mouse Logitech G502 X Plus\",\n    \"description\": \"Mouse gamer sem fio com sensor HERO 25K, 25.600 DPI, 13 botões programáveis e iluminação LIGHTFORCE.\",\n    \"price\": 549.9,\n    \"category\": \"mouse\",\n    \"image\": \"https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400\",\n    \"stock\": 15,\n    \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-01-01T00:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "❌ Produto não encontrado (404)",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Produto não encontrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar produto (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}", "description": "Requer token de admin" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": ["{{base_url}}"],
+              "path": ["products"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mouse Razer Viper V3 Pro\",\n  \"description\": \"Mouse sem fio ultraligante com sensor Focus Pro 35K e 35.000 DPI máximo.\",\n  \"price\": 899.90,\n  \"category\": \"mouse\",\n  \"image\": \"https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=400\",\n  \"stock\": 10\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Cria um novo produto no catálogo.\n\n**Requer:** Token de admin no header Authorization.\n\n**Campos obrigatórios:** name, description, price, category\n\n**Categorias válidas:** mouse | teclado | headset"
+          },
+          "response": [
+            {
+              "name": "✅ Produto criado (201)",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Produto criado com sucesso!\",\n  \"data\": {\n    \"id\": 13,\n    \"name\": \"Mouse Razer Viper V3 Pro\",\n    \"description\": \"Mouse sem fio ultraligante com sensor Focus Pro 35K e 35.000 DPI máximo.\",\n    \"price\": 899.9,\n    \"category\": \"mouse\",\n    \"image\": \"https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=400\",\n    \"stock\": 10,\n    \"createdAt\": \"2025-06-01T15:00:00.000Z\",\n    \"updatedAt\": \"2025-06-01T15:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "❌ Sem permissão — token de cliente (403)",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Acesso negado. Permissão insuficiente.\"\n}"
+            },
+            {
+              "name": "❌ Categoria inválida (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Categoria inválida. Use: mouse, teclado, headset\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar produto (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["products", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 499.90,\n  \"stock\": 20\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Atualiza parcialmente um produto. Apenas os campos enviados são alterados.\n\n**Requer:** Token de admin."
+          },
+          "response": [
+            {
+              "name": "✅ Produto atualizado (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Produto atualizado com sucesso!\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Mouse Logitech G502 X Plus\",\n    \"price\": 499.9,\n    \"stock\": 20,\n    \"updatedAt\": \"2025-06-01T16:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Excluir produto (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/13",
+              "host": ["{{base_url}}"],
+              "path": ["products", "13"]
+            },
+            "description": "Remove permanentemente um produto do catálogo.\n\n**Requer:** Token de admin.\n\n⚠️ Use um ID de produto que você criou para teste — não exclua os produtos do seed."
+          },
+          "response": [
+            {
+              "name": "✅ Produto excluído (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Produto removido com sucesso!\",\n  \"data\": null\n}"
+            },
+            {
+              "name": "❌ Produto não encontrado (404)",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Produto não encontrado\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🛍 Pedidos",
+      "description": "Criação, listagem e cancelamento de pedidos. Todas as rotas exigem autenticação.",
+      "item": [
+        {
+          "name": "Criar pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": ["{{base_url}}"],
+              "path": ["orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": 1, \"quantity\": 1 },\n    { \"productId\": 10, \"quantity\": 2 }\n  ],\n  \"metodoPagamento\": \"pix\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Cria um novo pedido com os itens do carrinho.\n\n**Requer:** Token no header.\n\n**metodoPagamento:** cartao | pix | boleto\n\n**Validações:**\n- Verifica estoque disponível para cada item\n- Decrementa o estoque após confirmação\n- Registra o preço atual de cada item (snapshot)\n- Toda a operação é atômica (prisma.$transaction)"
+          },
+          "response": [
+            {
+              "name": "✅ Pedido criado (201)",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Pedido realizado com sucesso! 🎉\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"total\": 1349.7,\n    \"status\": \"confirmado\",\n    \"metodoPagamento\": \"pix\",\n    \"createdAt\": \"2025-06-01T17:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "❌ Estoque insuficiente (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Estoque insuficiente para \\\"Headset SteelSeries Arctis Nova Pro\\\". Disponível: 6\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Meus pedidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/my",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "my"]
+            },
+            "description": "Lista todos os pedidos do usuário autenticado, ordenados do mais recente para o mais antigo.\n\n**Requer:** Token no header."
+          },
+          "response": [
+            {
+              "name": "✅ Lista de pedidos (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Pedidos recuperados com sucesso\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 2,\n      \"total\": 1349.7,\n      \"status\": \"confirmado\",\n      \"metodoPagamento\": \"pix\",\n      \"createdAt\": \"2025-06-01T17:00:00.000Z\",\n      \"orderItems\": [\n        {\n          \"id\": 1,\n          \"quantity\": 1,\n          \"price\": 549.9,\n          \"product\": {\n            \"id\": 1,\n            \"name\": \"Mouse Logitech G502 X Plus\",\n            \"image\": \"https://...\",\n            \"category\": \"mouse\"\n          }\n        }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Todos os pedidos (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": ["{{base_url}}"],
+              "path": ["orders"]
+            },
+            "description": "Lista todos os pedidos de todos os clientes.\n\n**Requer:** Token de admin.\n\nInclui dados do usuário e dos produtos de cada pedido."
+          },
+          "response": [
+            {
+              "name": "✅ Todos os pedidos (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Todos os pedidos recuperados\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"total\": 1349.7,\n      \"status\": \"confirmado\",\n      \"metodoPagamento\": \"pix\",\n      \"createdAt\": \"2025-06-01T17:00:00.000Z\",\n      \"user\": {\n        \"id\": 2,\n        \"name\": \"Cliente Teste\",\n        \"email\": \"cliente@email.com\"\n      },\n      \"orderItems\": [\n        {\n          \"quantity\": 1,\n          \"price\": 549.9,\n          \"product\": { \"id\": 1, \"name\": \"Mouse Logitech G502 X Plus\", \"price\": 549.9 }\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "❌ Sem permissão — cliente (403)",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Acesso negado. Apenas admin pode acessar este recurso.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Detalhe de um pedido",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/1",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "1"]
+            },
+            "description": "Retorna os detalhes completos de um pedido específico.\n\n**Requer:** Token no header.\n\n**Regra de acesso:** cliente só pode ver seus próprios pedidos. Admin pode ver qualquer pedido."
+          },
+          "response": [
+            {
+              "name": "✅ Pedido encontrado (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operação realizada com sucesso\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"total\": 1349.7,\n    \"status\": \"confirmado\",\n    \"metodoPagamento\": \"pix\",\n    \"createdAt\": \"2025-06-01T17:00:00.000Z\",\n    \"user\": { \"id\": 2, \"name\": \"Cliente Teste\", \"email\": \"cliente@email.com\" },\n    \"orderItems\": [\n      {\n        \"id\": 1,\n        \"orderId\": 1,\n        \"productId\": 1,\n        \"quantity\": 1,\n        \"price\": 549.9,\n        \"product\": {\n          \"id\": 1,\n          \"name\": \"Mouse Logitech G502 X Plus\",\n          \"price\": 549.9,\n          \"category\": \"mouse\"\n        }\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancelar pedido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/1/cancelar",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "1", "cancelar"]
+            },
+            "description": "Cancela um pedido e devolve o estoque dos produtos.\n\n**Requer:** Token no header.\n\n**Regras:**\n- Cliente pode cancelar apenas seus próprios pedidos\n- Cancelamento disponível em até 24h após a criação\n- Pedidos com status 'entregue' ou 'cancelado' não podem ser cancelados\n- Admin pode cancelar qualquer pedido a qualquer momento\n- O estoque é devolvido automaticamente via transação atômica"
+          },
+          "response": [
+            {
+              "name": "✅ Pedido cancelado (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Pedido cancelado com sucesso.\",\n  \"data\": {\n    \"mensagem\": \"Pedido cancelado com sucesso.\"\n  }\n}"
+            },
+            {
+              "name": "❌ Prazo expirado (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"O prazo para cancelamento é de 24 horas após a compra.\"\n}"
+            },
+            {
+              "name": "❌ Já cancelado (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Este pedido já foi cancelado.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⭐ Avaliações",
+      "description": "Listagem e criação de avaliações de produtos. Listar é público. Criar exige autenticação e compra prévia do produto.",
+      "item": [
+        {
+          "name": "Listar avaliações de um produto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/avaliacoes/1",
+              "host": ["{{base_url}}"],
+              "path": ["avaliacoes", "1"]
+            },
+            "description": "Retorna todas as avaliações de um produto, com a média de notas e total.\n\n**Rota pública** — não exige autenticação.\n\nInclui avaliações fictícias (seed) e avaliações reais de clientes verificados."
+          },
+          "response": [
+            {
+              "name": "✅ Avaliações do produto (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operação realizada com sucesso\",\n  \"data\": {\n    \"avaliacoes\": [\n      {\n        \"id\": 1,\n        \"produtoId\": 1,\n        \"usuarioId\": 1,\n        \"nota\": 5,\n        \"titulo\": \"Melhor mouse que já usei!\",\n        \"texto\": \"Sensacional! O sensor é preciso demais, o peso customizável faz toda diferença nos jogos de FPS.\",\n        \"nomeAutor\": \"Rafael M.\",\n        \"ficticia\": true,\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n      }\n    ],\n    \"media\": 4.7,\n    \"total\": 3\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar avaliação (compra verificada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/avaliacoes/1",
+              "host": ["{{base_url}}"],
+              "path": ["avaliacoes", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": 5,\n  \"titulo\": \"Produto incrível!\",\n  \"texto\": \"Chegou rápido, embalagem perfeita. O mouse é exatamente como descrito, super recomendo!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Cria uma avaliação para um produto.\n\n**Requer:** Token no header.\n\n**Validações:**\n- O usuário deve ter comprado o produto (pedido com status diferente de 'cancelado')\n- Cada usuário pode avaliar cada produto apenas uma vez\n- nota deve ser entre 1 e 5\n- titulo e texto são obrigatórios\n\nA avaliação criada aparece com tag 'Compra verificada' na página do produto."
+          },
+          "response": [
+            {
+              "name": "✅ Avaliação criada (201)",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Avaliação enviada com sucesso!\",\n  \"data\": {\n    \"id\": 17,\n    \"produtoId\": 1,\n    \"usuarioId\": 2,\n    \"nota\": 5,\n    \"titulo\": \"Produto incrível!\",\n    \"texto\": \"Chegou rápido, embalagem perfeita. O mouse é exatamente como descrito, super recomendo!\",\n    \"nomeAutor\": \"Cliente Teste\",\n    \"ficticia\": false,\n    \"createdAt\": \"2025-06-01T18:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "❌ Não comprou o produto (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Você só pode avaliar produtos que comprou.\"\n}"
+            },
+            {
+              "name": "❌ Já avaliou este produto (400)",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Você já avaliou este produto.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Check",
+      "item": [
+        {
+          "name": "Status da API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/health",
+              "raw": "http://localhost:3001/health"
+            },
+            "description": "Verifica se o servidor está online e respondendo.\n\n**Rota pública** — não usa o prefixo /api."
+          },
+          "response": [
+            {
+              "name": "✅ API online (200)",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": \"OK\",\n  \"mensagem\": \"API funcionando! 🖱️⌨️🎧\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
