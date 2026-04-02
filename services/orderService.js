@@ -1,9 +1,21 @@
-// services/orderService.js
+/**
+ * @file orderService.js
+ * @description Serviço de pedidos — contém toda a lógica de negócio relacionada a pedidos.
+ * Não conhece Express (req/res). Lança erros com statusCode para o controller tratar.
+ */
+
 const OrderRepository   = require("../repositories/orderRepository");
 const ProductRepository = require("../repositories/productRepository");
 
 const OrderService = {
 
+  /**
+   * Cria um novo pedido validando estoque e calculando o total.
+   * @param {number} usuarioId - ID do usuário autenticado
+   * @param {Array<{productId: number, quantity: number}>} itensCarrinho - Itens do carrinho
+   * @param {string} metodoPagamento - Forma de pagamento (ex: "cartao", "pix")
+   * @returns {Promise<object>} Pedido criado
+   */
   async createOrder(usuarioId, itensCarrinho, metodoPagamento) {
     if (!itensCarrinho || itensCarrinho.length === 0)
       throw new Error("O carrinho está vazio.");
@@ -24,14 +36,30 @@ const OrderService = {
     return await OrderRepository.create(usuarioId, itensPedido, total, metodoPagamento || "cartao");
   },
 
+  /**
+   * Retorna todos os pedidos de um usuário específico.
+   * @param {number} usuarioId - ID do usuário
+   * @returns {Promise<Array>} Lista de pedidos
+   */
   async getUserOrders(usuarioId) {
     return await OrderRepository.findByUserId(usuarioId);
   },
 
+  /**
+   * Retorna todos os pedidos do sistema (uso exclusivo do admin).
+   * @returns {Promise<Array>} Lista completa de pedidos
+   */
   async getAllOrders() {
     return await OrderRepository.findAll();
   },
 
+  /**
+   * Retorna um pedido pelo ID, verificando permissão de acesso.
+   * @param {number} id - ID do pedido
+   * @param {number} usuarioId - ID do usuário autenticado
+   * @param {string} roleUsuario - Role do usuário ("admin" ou "client")
+   * @returns {Promise<object>} Pedido encontrado
+   */
   async getOrderById(id, usuarioId, roleUsuario) {
     const pedido = await OrderRepository.findById(id);
     if (!pedido) { const e = new Error("Pedido não encontrado."); e.statusCode = 404; throw e; }
@@ -41,6 +69,16 @@ const OrderService = {
     return pedido;
   },
 
+  /**
+   * Cancela um pedido aplicando as regras de negócio:
+   * - Cliente só pode cancelar em até 24h após a compra
+   * - Admin pode cancelar a qualquer momento
+   * - Devolve o estoque dos produtos automaticamente
+   * @param {number} id - ID do pedido
+   * @param {number} usuarioId - ID do usuário autenticado
+   * @param {string} roleUsuario - Role do usuário ("admin" ou "client")
+   * @returns {Promise<{mensagem: string}>}
+   */
   async cancelarPedido(id, usuarioId, roleUsuario) {
     const pedido = await OrderRepository.findById(id);
     if (!pedido) { const e = new Error("Pedido não encontrado."); e.statusCode = 404; throw e; }
