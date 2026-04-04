@@ -7,146 +7,179 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/estilo.css">
   <style>
-    .alerta-erro {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 6px;
-      padding: 0.65rem 0.9rem;
-      color: #f87171;
-      font-size: 0.875rem;
-      margin-bottom: 1rem;
+    /* Estilo do campo com erro — borda vermelha */
+    .campo-erro { border-color: #ef4444 !important; }
+ 
+    /* Mensagem de erro inline — aparece ABAIXO do campo */
+    .msg-erro-inline {
       display: none;
+      color: #f87171;
+      font-size: 0.78rem;
+      margin-top: 4px;
+      padding-left: 2px;
     }
+    .msg-erro-inline.visivel { display: block; }
   </style>
 </head>
 <body>
-
+ 
 <div class="container-auth">
   <div class="cartao-auth">
-
+ 
     <div class="logo-auth">⌨ PERIFÉRICOS<span style="color:var(--cor-texto-suave);font-weight:300">.shop</span></div>
     <p class="subtitulo-auth">Faça login na sua conta</p>
-
-    <div class="alerta-erro" id="alerta"></div>
-
+ 
+    <!-- Campo Email -->
     <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input type="email" id="campo-email" class="form-control" placeholder="seu@email.com">
+      <label class="form-label">Email <span style="color:#ef4444">*</span></label>
+      <input type="email" id="campo-email" class="form-control" placeholder="seu@email.com"
+        oninput="limparErro('campo-email','erro-email')">
+      <span class="msg-erro-inline" id="erro-email">⚠ Digite um email válido.</span>
     </div>
-
+ 
+    <!-- Campo Senha -->
     <div class="mb-3">
-      <label class="form-label">Senha</label>
+      <label class="form-label">Senha <span style="color:#ef4444">*</span></label>
       <div style="position:relative">
-        <input type="password" id="campo-senha" class="form-control" placeholder="••••••••">
-        <button type="button" onclick="alternarSenha()" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cor-texto-suave);cursor:pointer;font-size:0.9rem">👁</button>
+        <input type="password" id="campo-senha" class="form-control" placeholder="••••••••"
+          oninput="limparErro('campo-senha','erro-senha')">
+        <button type="button" onclick="alternarSenha()"
+          style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--cor-texto-suave);cursor:pointer;font-size:0.9rem">👁</button>
       </div>
+      <span class="msg-erro-inline" id="erro-senha">⚠ Digite sua senha.</span>
     </div>
-
+ 
+    <!-- Erro geral (ex: credenciais inválidas) -->
+    <div id="alerta-geral" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.65rem 0.9rem;color:#f87171;font-size:0.875rem;margin-bottom:1rem"></div>
+ 
     <button onclick="fazerLogin()" id="botao-entrar" class="btn-destaque w-100 py-2 mt-1">
       <span id="texto-botao">Entrar</span>
       <span id="texto-carregando" style="display:none">Aguarde...</span>
     </button>
-
-    <div class="divisor-auth" style="display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:var(--cor-texto-suave);font-size:0.8rem">
-      <div style="flex:1;height:1px;background:var(--cor-borda)"></div>
+ 
+    <div style="display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:#4a5870;font-size:0.8rem">
+      <div style="flex:1;height:1px;background:#1e2d45"></div>
       ou
-      <div style="flex:1;height:1px;background:var(--cor-borda)"></div>
+      <div style="flex:1;height:1px;background:#1e2d45"></div>
     </div>
-
-    <p class="text-center" style="font-size:0.875rem;color:var(--cor-texto-suave)">
+ 
+    <p class="text-center" style="font-size:0.875rem;color:#4a5870">
       Não tem conta?
-      <a href="cadastro.html" style="color:var(--cor-destaque);font-weight:500">Cadastre-se grátis</a>
+      <a href="cadastro.html" style="color:#00d4ff;font-weight:500">Cadastre-se grátis</a>
     </p>
-
-    <div style="margin-top:1.5rem;padding:0.85rem;background:var(--cor-fundo-secundario);border-radius:var(--raio-p);border:1px dashed var(--cor-borda);font-size:0.75rem;color:var(--cor-texto-suave)">
-      <strong style="color:var(--cor-texto-secundario);display:block;margin-bottom:4px">🧪 Contas de teste</strong>
+ 
+    <div style="margin-top:1.5rem;padding:0.85rem;background:#111827;border-radius:6px;border:1px dashed #1e2d45;font-size:0.75rem;color:#4a5870">
+      <strong style="color:#8a9bbf;display:block;margin-bottom:4px">🧪 Contas de teste</strong>
       Admin: admin@perifericos.com / admin123<br>
       Cliente: cliente@email.com / cliente123
     </div>
-
+ 
   </div>
 </div>
-
+ 
 <script>
-  // ── URL do backend ──
   var URL_API = "http://localhost:3001/api";
-
-  // ── Se já estiver logado, redireciona ──
+ 
+  // Redireciona se já logado
   var tokenSalvo = localStorage.getItem("token");
-  var usuarioSalvo = localStorage.getItem("usuario");
-  if (tokenSalvo && usuarioSalvo) {
+  if (tokenSalvo) {
     try {
-      var u = JSON.parse(usuarioSalvo);
+      var u = JSON.parse(localStorage.getItem("usuario"));
       window.location.href = u.role === "admin" ? "admin.html" : "index.html";
     } catch(e) {}
   }
-
+ 
   function alternarSenha() {
-    var campo = document.getElementById("campo-senha");
-    campo.type = campo.type === "password" ? "text" : "password";
+    var c = document.getElementById("campo-senha");
+    c.type = c.type === "password" ? "text" : "password";
   }
-
-  function mostrarAlerta(mensagem) {
-    var el = document.getElementById("alerta");
-    el.textContent = mensagem;
+ 
+  // ── Validação inline: mostra erro ABAIXO do campo específico ──
+  function mostrarErroCampo(idCampo, idErro, mensagem) {
+    var campo = document.getElementById(idCampo);
+    var span  = document.getElementById(idErro);
+    campo.classList.add("campo-erro");
+    span.textContent = "⚠ " + mensagem;
+    span.classList.add("visivel");
+    campo.focus();
+  }
+ 
+  // Limpa o erro quando o usuário começa a digitar
+  function limparErro(idCampo, idErro) {
+    document.getElementById(idCampo).classList.remove("campo-erro");
+    document.getElementById(idErro).classList.remove("visivel");
+    document.getElementById("alerta-geral").style.display = "none";
+  }
+ 
+  function mostrarAlertaGeral(msg) {
+    var el = document.getElementById("alerta-geral");
+    el.textContent = msg;
     el.style.display = "block";
   }
-
+ 
   function definirCarregando(ativo) {
-    document.getElementById("texto-botao").style.display     = ativo ? "none"   : "inline";
+    document.getElementById("texto-botao").style.display      = ativo ? "none"   : "inline";
     document.getElementById("texto-carregando").style.display = ativo ? "inline" : "none";
     document.getElementById("botao-entrar").disabled = ativo;
   }
-
+ 
   async function fazerLogin() {
-    // Esconde alerta anterior
-    document.getElementById("alerta").style.display = "none";
-
+    // Limpa erros anteriores
+    limparErro("campo-email", "erro-email");
+    limparErro("campo-senha", "erro-senha");
+ 
     var email = document.getElementById("campo-email").value.trim();
     var senha  = document.getElementById("campo-senha").value;
-
-    // Validação básica
-    if (!email || !senha) {
-      mostrarAlerta("Preencha o email e a senha.");
-      return;
+ 
+    // ── Validação inline por campo ──
+    var valido = true;
+ 
+    if (!email) {
+      mostrarErroCampo("campo-email", "erro-email", "O email é obrigatório.");
+      valido = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      mostrarErroCampo("campo-email", "erro-email", "Digite um email válido.");
+      valido = false;
     }
-
+ 
+    if (!senha) {
+      mostrarErroCampo("campo-senha", "erro-senha", "A senha é obrigatória.");
+      valido = false;
+    }
+ 
+    if (!valido) return;
+ 
     definirCarregando(true);
-
+ 
     try {
       var resposta = await fetch(URL_API + "/auth/login", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, password: senha })
+        body:    JSON.stringify({ email: email, password: senha })
       });
-
+ 
       var dados = await resposta.json();
-
+ 
       if (dados.success) {
-        // Salva token e usuário no localStorage
         localStorage.setItem("token",   dados.data.token);
         localStorage.setItem("usuario", JSON.stringify(dados.data.user));
-
-        // Redireciona conforme o perfil
         window.location.href = dados.data.user.role === "admin" ? "admin.html" : "index.html";
-
       } else {
-        mostrarAlerta(dados.message || "Email ou senha incorretos.");
+        // Erro do servidor (ex: credenciais erradas) → alerta geral
+        mostrarAlertaGeral(dados.message || "Email ou senha incorretos.");
       }
-
+ 
     } catch (erro) {
-      mostrarAlerta("Não foi possível conectar ao servidor. Verifique se o backend está rodando (npm run dev).");
-      console.error("Erro de conexão:", erro);
+      mostrarAlertaGeral("Servidor offline. Verifique se o backend está rodando (npm run dev).");
+      console.error(erro);
     }
-
+ 
     definirCarregando(false);
   }
-
-  // Permite pressionar Enter para logar
+ 
   document.addEventListener("keydown", function(e) {
     if (e.key === "Enter") fazerLogin();
   });
 </script>
-
 </body>
 </html>
