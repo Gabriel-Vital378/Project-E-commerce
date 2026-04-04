@@ -6,147 +6,217 @@
   <title>Cadastro — Periféricos.shop</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/estilo.css">
+  <style>
+    .campo-erro { border-color: #ef4444 !important; }
+    .msg-erro-inline {
+      display: none;
+      color: #f87171;
+      font-size: 0.78rem;
+      margin-top: 4px;
+      padding-left: 2px;
+    }
+    .msg-erro-inline.visivel { display: block; }
+  </style>
 </head>
 <body>
-
+ 
 <div class="container-auth">
   <div class="cartao-auth">
-
-    <div class="logo-auth">⌨ PERIFÉRICOS<span style="color:var(--cor-texto-suave);font-weight:300">.shop</span></div>
+ 
+    <div class="logo-auth">⌨ PERIFÉRICOS<span style="color:#4a5870;font-weight:300">.shop</span></div>
     <p class="subtitulo-auth">Crie sua conta gratuitamente</p>
-
-    <div id="alerta" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.65rem 0.9rem;color:#f87171;font-size:0.875rem;margin-bottom:1rem"></div>
-
+ 
+    <!-- Erro geral (ex: email já cadastrado) -->
+    <div id="alerta-geral" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:0.65rem 0.9rem;color:#f87171;font-size:0.875rem;margin-bottom:1rem"></div>
+ 
+    <!-- Nome -->
     <div class="mb-3">
-      <label class="form-label">Nome completo</label>
-      <input type="text" id="campo-nome" class="form-control" placeholder="Seu nome">
+      <label class="form-label">Nome completo <span style="color:#ef4444">*</span></label>
+      <input type="text" id="campo-nome" class="form-control" placeholder="Seu nome"
+        oninput="limparErro('campo-nome','erro-nome')">
+      <span class="msg-erro-inline" id="erro-nome"></span>
     </div>
-
+ 
+    <!-- Email -->
     <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input type="email" id="campo-email" class="form-control" placeholder="seu@email.com">
+      <label class="form-label">Email <span style="color:#ef4444">*</span></label>
+      <input type="email" id="campo-email" class="form-control" placeholder="seu@email.com"
+        oninput="limparErro('campo-email','erro-email')">
+      <span class="msg-erro-inline" id="erro-email"></span>
     </div>
-
+ 
+    <!-- Senha -->
     <div class="mb-3">
-      <label class="form-label">Senha</label>
-      <input type="password" id="campo-senha" class="form-control" placeholder="Mínimo 6 caracteres">
+      <label class="form-label">Senha <span style="color:#ef4444">*</span></label>
+      <input type="password" id="campo-senha" class="form-control" placeholder="Mínimo 6 caracteres"
+        oninput="limparErro('campo-senha','erro-senha'); medirForca(this.value)">
       <div style="margin-top:6px;height:3px;background:#1e2d45;border-radius:2px;overflow:hidden">
         <div id="barra-forca" style="height:100%;width:0;transition:all 0.3s;border-radius:2px"></div>
       </div>
       <small id="texto-forca" style="font-size:0.72rem"></small>
+      <span class="msg-erro-inline" id="erro-senha"></span>
     </div>
-
+ 
+    <!-- Confirmar senha -->
     <div class="mb-3">
-      <label class="form-label">Confirmar senha</label>
-      <input type="password" id="campo-confirmar" class="form-control" placeholder="Repita a senha">
+      <label class="form-label">Confirmar senha <span style="color:#ef4444">*</span></label>
+      <input type="password" id="campo-confirmar" class="form-control" placeholder="Repita a senha"
+        oninput="limparErro('campo-confirmar','erro-confirmar')">
+      <span class="msg-erro-inline" id="erro-confirmar"></span>
     </div>
-
+ 
     <button onclick="fazerCadastro()" id="botao-cadastrar" class="btn-destaque w-100 py-2 mt-1">
       <span id="texto-botao">Criar conta</span>
       <span id="texto-carregando" style="display:none">Criando conta...</span>
     </button>
-
+ 
     <div style="display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:#4a5870;font-size:0.8rem">
       <div style="flex:1;height:1px;background:#1e2d45"></div>
       ou
       <div style="flex:1;height:1px;background:#1e2d45"></div>
     </div>
-
+ 
     <p class="text-center" style="font-size:0.875rem;color:#4a5870">
       Já tem uma conta?
       <a href="login.html" style="color:#00d4ff;font-weight:500">Fazer login</a>
     </p>
-
+ 
   </div>
 </div>
-
+ 
 <script>
   var URL_API = "http://localhost:3001/api";
-
-  // Se já logado, redireciona
   if (localStorage.getItem("token")) window.location.href = "index.html";
-
-  // Medidor de força da senha
-  document.getElementById("campo-senha").addEventListener("input", function() {
-    var val    = this.value;
-    var forca  = 0;
-    if (val.length >= 6)           forca++;
-    if (val.length >= 10)          forca++;
-    if (/[A-Z]/.test(val))         forca++;
-    if (/[0-9]/.test(val))         forca++;
-    if (/[^A-Za-z0-9]/.test(val))  forca++;
-
-    var niveis = [
-      { largura: "0%",    cor: "transparent",  texto: "" },
-      { largura: "25%",   cor: "#ef4444",      texto: "Fraca" },
-      { largura: "50%",   cor: "#f59e0b",      texto: "Regular" },
-      { largura: "75%",   cor: "#3b82f6",      texto: "Boa" },
-      { largura: "100%",  cor: "#10b981",      texto: "Forte" },
-    ];
-    var n = Math.min(forca, 4);
-    document.getElementById("barra-forca").style.width      = niveis[n].largura;
-    document.getElementById("barra-forca").style.background = niveis[n].cor;
-    document.getElementById("texto-forca").textContent      = niveis[n].texto;
-    document.getElementById("texto-forca").style.color      = niveis[n].cor;
-  });
-
-  function mostrarAlerta(msg) {
-    var el = document.getElementById("alerta");
-    el.textContent   = msg;
+ 
+  // ── Validação inline ──
+  function mostrarErroCampo(idCampo, idErro, mensagem) {
+    document.getElementById(idCampo).classList.add("campo-erro");
+    var span = document.getElementById(idErro);
+    span.textContent = "⚠ " + mensagem;
+    span.classList.add("visivel");
+  }
+ 
+  function limparErro(idCampo, idErro) {
+    document.getElementById(idCampo).classList.remove("campo-erro");
+    document.getElementById(idErro).classList.remove("visivel");
+    document.getElementById("alerta-geral").style.display = "none";
+  }
+ 
+  function mostrarAlertaGeral(msg) {
+    var el = document.getElementById("alerta-geral");
+    el.textContent = msg;
     el.style.display = "block";
   }
-
+ 
+  // ── Medidor de força da senha ──
+  function medirForca(val) {
+    var forca = 0;
+    if (val.length >= 6)          forca++;
+    if (val.length >= 10)         forca++;
+    if (/[A-Z]/.test(val))        forca++;
+    if (/[0-9]/.test(val))        forca++;
+    if (/[^A-Za-z0-9]/.test(val)) forca++;
+ 
+    var niveis = [
+      { l:"0%",    c:"transparent", t:"" },
+      { l:"25%",   c:"#ef4444",     t:"Fraca" },
+      { l:"50%",   c:"#f59e0b",     t:"Regular" },
+      { l:"75%",   c:"#3b82f6",     t:"Boa" },
+      { l:"100%",  c:"#10b981",     t:"Forte" },
+    ];
+    var n = Math.min(forca, 4);
+    document.getElementById("barra-forca").style.width      = niveis[n].l;
+    document.getElementById("barra-forca").style.background = niveis[n].c;
+    document.getElementById("texto-forca").textContent      = niveis[n].t;
+    document.getElementById("texto-forca").style.color      = niveis[n].c;
+  }
+ 
   function definirCarregando(ativo) {
     document.getElementById("texto-botao").style.display      = ativo ? "none"   : "inline";
     document.getElementById("texto-carregando").style.display = ativo ? "inline" : "none";
     document.getElementById("botao-cadastrar").disabled = ativo;
   }
-
+ 
   async function fazerCadastro() {
-    document.getElementById("alerta").style.display = "none";
-
+    // Limpa todos os erros
+    ["nome","email","senha","confirmar"].forEach(function(c) {
+      limparErro("campo-"+c, "erro-"+c);
+    });
+ 
     var nome      = document.getElementById("campo-nome").value.trim();
     var email     = document.getElementById("campo-email").value.trim();
     var senha     = document.getElementById("campo-senha").value;
     var confirmar = document.getElementById("campo-confirmar").value;
-
-    if (!nome)              { mostrarAlerta("Digite seu nome.");                    return; }
-    if (!email)             { mostrarAlerta("Digite seu email.");                   return; }
-    if (!senha)             { mostrarAlerta("Digite uma senha.");                   return; }
-    if (senha.length < 6)   { mostrarAlerta("A senha precisa ter 6+ caracteres."); return; }
-    if (senha !== confirmar){ mostrarAlerta("As senhas não coincidem.");            return; }
-
+ 
+    // ── Valida cada campo individualmente (inline) ──
+    var valido = true;
+ 
+    if (!nome) {
+      mostrarErroCampo("campo-nome", "erro-nome", "O nome é obrigatório.");
+      valido = false;
+    }
+ 
+    if (!email) {
+      mostrarErroCampo("campo-email", "erro-email", "O email é obrigatório.");
+      valido = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      mostrarErroCampo("campo-email", "erro-email", "Digite um email válido.");
+      valido = false;
+    }
+ 
+    if (!senha) {
+      mostrarErroCampo("campo-senha", "erro-senha", "A senha é obrigatória.");
+      valido = false;
+    } else if (senha.length < 6) {
+      mostrarErroCampo("campo-senha", "erro-senha", "A senha deve ter pelo menos 6 caracteres.");
+      valido = false;
+    }
+ 
+    if (!confirmar) {
+      mostrarErroCampo("campo-confirmar", "erro-confirmar", "Confirme sua senha.");
+      valido = false;
+    } else if (senha && confirmar !== senha) {
+      mostrarErroCampo("campo-confirmar", "erro-confirmar", "As senhas não coincidem.");
+      valido = false;
+    }
+ 
+    if (!valido) return;
+ 
     definirCarregando(true);
-
+ 
     try {
       var resposta = await fetch(URL_API + "/auth/register", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ name: nome, email: email, password: senha })
       });
-
+ 
       var dados = await resposta.json();
-
+ 
       if (dados.success) {
         localStorage.setItem("token",   dados.data.token);
         localStorage.setItem("usuario", JSON.stringify(dados.data.user));
         window.location.href = "index.html";
       } else {
-        mostrarAlerta(dados.message || "Erro ao criar conta.");
+        // Email já cadastrado → erro no campo email
+        if (dados.message && dados.message.includes("email")) {
+          mostrarErroCampo("campo-email", "erro-email", dados.message);
+        } else {
+          mostrarAlertaGeral(dados.message || "Erro ao criar conta.");
+        }
       }
-
+ 
     } catch (erro) {
-      mostrarAlerta("Não foi possível conectar ao servidor. Verifique se o backend está rodando.");
+      mostrarAlertaGeral("Servidor offline. Verifique se o backend está rodando.");
       console.error(erro);
     }
-
+ 
     definirCarregando(false);
   }
-
+ 
   document.addEventListener("keydown", function(e) {
     if (e.key === "Enter") fazerCadastro();
   });
 </script>
-
 </body>
 </html>
