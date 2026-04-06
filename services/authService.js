@@ -1,103 +1,126 @@
-// services/authService.js
-// Camada de serviço: contém a lógica de negócio de autenticação
-// Não conhece Express (req/res) — só trabalha com dados puros
-
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+/**
+ * @file authService.js
+ * @description Serviço de autenticação — lógica de negócio de registro e login.
+ *
+ * @principle SOLID — Single Responsibility (S)
+ * @description Este service tem UMA única responsabilidade: lógica de
+ *              autenticação (hash de senha, geração de JWT, validações).
+ *              Não manipula objetos HTTP (req/res) — isso é papel do controller.
+ *
+ * @principle SOLID — Dependency Inversion (D)
+ * @description Depende da abstração UserRepository, não da implementação
+ *              concreta do Prisma. O service não sabe como o banco funciona.
+ */
+ 
+const bcrypt         = require("bcryptjs");
+const jwt            = require("jsonwebtoken");
 const UserRepository = require("../repositories/userRepository");
-
+ 
 const AuthService = {
+ 
   /**
-   * Registra um novo usuário
-   * @param {object} data - { name, email, password }
+   * Registra um novo usuário no sistema.
+   * Valida os dados, faz hash da senha e gera JWT.
+   *
+   * @param {object} data          - Dados do novo usuário
+   * @param {string} data.name     - Nome completo
+   * @param {string} data.email    - Email único
+   * @param {string} data.password - Senha em texto puro (será hasheada)
+   * @returns {Promise<{user: object, token: string}>}
+   * @throws {Error} Se email já cadastrado ou dados inválidos
    */
   async register(data) {
     const { name, email, password } = data;
-
+ 
     // Validações de negócio
     if (!name || !email || !password) {
-      throw new Error("Nome, email e senha são obrigatórios");
+      throw new Error("Nome, email e senha são obrigatórios.");
     }
-
     if (password.length < 6) {
-      throw new Error("A senha deve ter pelo menos 6 caracteres");
+      throw new Error("A senha deve ter pelo menos 6 caracteres.");
     }
-
+ 
     // Verifica se email já está em uso
-    const emailExists = await UserRepository.emailExists(email);
-    if (emailExists) {
-      const err = new Error("Este email já está cadastrado");
-      err.statusCode = 409; // Conflict
+    const emailExiste = await UserRepository.emailExists(email);
+    if (emailExiste) {
+      const err = new Error("Este email já está cadastrado.");
+      err.statusCode = 409;
       throw err;
     }
-
-    // Hash da senha com bcrypt (custo 10 = bom equilíbrio segurança/performance)
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Cria o usuário (sempre como "client" — admin é criado via seed)
-    const user = await UserRepository.create({
+ 
+    // Hash da senha — custo 10 = bom equilíbrio entre segurança e performance
+    const senhaCriptografada = await bcrypt.hash(password, 10);
+ 
+    // Cria o usuário sempre como "client" — admin é criado via seed
+    const usuario = await UserRepository.create({
       name,
       email,
-      password: hashedPassword,
-      role: "client",
+      password: senhaCriptografada,
+      role:     "client",
     });
-
+ 
     // Gera token JWT imediatamente após o registro
-    const token = this._generateToken(user);
-
-    return { user, token };
+    const token = this._gerarToken(usuario);
+ 
+    return { user: usuario, token };
   },
-
+ 
   /**
-   * Realiza login do usuário
-   * @param {object} data - { email, password }
+   * Autentica um usuário e retorna JWT.
+   *
+   * @param {object} data          - Credenciais do usuário
+   * @param {string} data.email    - Email cadastrado
+   * @param {string} data.password - Senha em texto puro
+   * @returns {Promise<{user: object, token: string}>}
+   * @throws {Error} Se credenciais inválidas
    */
   async login(data) {
     const { email, password } = data;
-
+ 
     if (!email || !password) {
-      throw new Error("Email e senha são obrigatórios");
+      throw new Error("Email e senha são obrigatórios.");
     }
-
-    // Busca usuário com a senha (findByEmail retorna tudo, incluindo password)
-    const user = await UserRepository.findByEmail(email);
-
-    if (!user) {
-      // Mensagem genérica por segurança (não revela se o email existe)
-      throw new Error("Email ou senha incorretos");
+ 
+    // Busca usuário com a senha (necessário para o bcrypt.compare)
+    const usuario = await UserRepository.findByEmail(email);
+ 
+    if (!usuario) {
+      // Mensagem genérica por segurança — não revela se o email existe
+      throw new Error("Email ou senha incorretos.");
     }
-
-    // Compara senha fornecida com o hash armazenado
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
-      throw new Error("Email ou senha incorretos");
+ 
+    // Compara a senha fornecida com o hash armazenado
+    const senhaCorreta = await bcrypt.compare(password, usuario.password);
+ 
+    if (!senhaCorreta) {
+      throw new Error("Email ou senha incorretos.");
     }
-
+ 
     // Remove a senha do objeto antes de retornar
-    const { password: _, ...userWithoutPassword } = user;
-
+    const { password: _, ...usuarioSemSenha } = usuario;
+ 
     // Gera token JWT
-    const token = this._generateToken(user);
-
-    return { user: userWithoutPassword, token };
+    const token = this._gerarToken(usuario);
+ 
+    return { user: usuarioSemSenha, token };
   },
-
+ 
   /**
-   * Gera um token JWT com as informações do usuário
+   * Gera um token JWT com os dados do usuário.
+   * Token expira conforme JWT_EXPIRES_IN no .env (padrão: 7d).
+   *
    * @private
+   * @param {object} usuario - Dados do usuário
+   * @returns {string} Token JWT assinado
    */
-  _generateToken(user) {
+  _gerarToken(usuario) {
     return jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
+      { id: usuario.id, email: usuario.email, role: usuario.role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
   },
 };
-
+ 
 module.exports = AuthService;
+ 
