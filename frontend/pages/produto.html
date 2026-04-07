@@ -72,7 +72,7 @@
   var qtdSelecionada    = 1;
   var notaSelecionada   = 0;
 
-  if (!idProduto) window.location.href = "index.html";
+  if (!idProduto) window.location.href = "/";
 
   // ── Carrega produto ──
   async function carregarProduto() {
@@ -81,7 +81,7 @@
 
     var res = await cliente.buscar("/products/" + idProduto);
     if (!res.success) {
-      container.innerHTML = '<div class="container py-5"><div class="empty-state"><div class="empty-icon">⚠</div><h4>Produto não encontrado</h4><a href="index.html" class="btn-destaque mt-3 d-inline-block">← Voltar</a></div></div>';
+      container.innerHTML = '<div class="container py-5"><div class="empty-state"><div class="empty-icon">⚠</div><h4>Produto não encontrado</h4><a href="/" class="btn-destaque mt-3 d-inline-block">← Voltar</a></div></div>';
       return;
     }
     produtoAtual = res.data;
@@ -98,7 +98,7 @@
     document.getElementById("detalhe-produto").innerHTML =
       '<div class="container py-4">' +
         '<nav style="font-size:0.82rem;color:var(--cor-texto-suave);margin-bottom:1.5rem">' +
-          '<a href="index.html" style="color:var(--cor-texto-suave)">Produtos</a> › ' +
+          '<a href="/" style="color:var(--cor-texto-suave)">Produtos</a> › ' +
           '<span class="badge-categoria '+cls+'">'+formatar.categoria(p.category)+'</span> › ' +
           '<span style="color:var(--cor-texto-secundario)">'+p.name+'</span>' +
         '</nav>' +
@@ -131,10 +131,10 @@
                 '<div style="color:var(--cor-texto-secundario);font-size:0.875rem;margin-bottom:1.25rem">Subtotal: <strong id="subtotal-prod" style="color:var(--cor-destaque)">'+formatar.moeda(p.price)+'</strong></div>' +
                 '<div class="d-flex gap-2 flex-wrap">' +
                   '<button class="btn-destaque" style="padding:0.65rem 1.5rem" onclick="adicionarCarrinho()">🛒 Adicionar ao Carrinho</button>' +
-                  '<a href="index.html" class="btn-fantasma" style="padding:0.65rem 1.25rem">← Voltar</a>' +
+                  '<a href="/" class="btn-fantasma" style="padding:0.65rem 1.25rem">← Voltar</a>' +
                 '</div>'
               : '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--raio-p);padding:0.75rem 1rem;color:#f87171;margin-bottom:1rem">❌ Produto indisponível no momento.</div>' +
-                '<a href="index.html" class="btn-fantasma">← Ver outros produtos</a>'
+                '<a href="/" class="btn-fantasma">← Ver outros produtos</a>'
             ) +
           '</div>' +
         '</div>' +
@@ -249,7 +249,7 @@
                 '<button class="btn-destaque" style="padding:0.4rem 1rem;font-size:0.875rem" onclick="abrirModalAvaliacao()">⭐ Avaliar</button>' +
               '</div>'
             : '<div style="background:#151d2e;border:1px solid #1e2d45;border-radius:12px;padding:1rem;margin-bottom:1rem;font-size:0.875rem;color:#4a5870">' +
-                '🔒 <a href="login.html" style="color:#00d4ff">Faça login</a> para avaliar este produto.' +
+                '🔒 <a href="/login" style="color:#00d4ff">Faça login</a> para avaliar este produto.' +
               '</div>'
           ) +
           htmlAvaliacoes +

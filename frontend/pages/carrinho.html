@@ -31,7 +31,7 @@
           '<div class="empty-icon">🛒</div>' +
           '<h4>Seu carrinho está vazio</h4>' +
           '<p>Adicione produtos para continuar.</p>' +
-          '<a href="index.html" class="btn-destaque mt-3 d-inline-block">Ver Produtos</a>' +
+          '<a href="/" class="btn-destaque mt-3 d-inline-block">Ver Produtos</a>' +
         '</div></div>';
       return;
     }
@@ -48,7 +48,7 @@
         '<div class="item-carrinho" id="item-' + item.id + '">' +
           '<img src="' + item.imagem + '" class="item-carrinho-imagem"' +
             ' onerror="this.src=\'https://placehold.co/70x70/111827/00d4ff?text=P\'"' +
-            ' onclick="window.location.href=\'produto.html?id=' + item.id + '\'" style="cursor:pointer">' +
+            ' onclick="window.location.href=\'/produto?id=' + item.id + '\'" style="cursor:pointer">' +
           '<div style="flex:1">' +
             '<div class="item-carrinho-nome">' + item.nome + '</div>' +
             '<div style="font-size:0.75rem;color:var(--cor-texto-suave);margin-bottom:4px">' + formatar.categoria(item.categoria) + '</div>' +
@@ -71,7 +71,7 @@
         '<div class="titulo-secao">Itens (' + itens.length + ')</div>' +
         '<div class="d-flex flex-column gap-2">' + htmlItens + '</div>' +
         '<div class="d-flex justify-content-between align-items-center mt-3">' +
-          '<a href="index.html" class="btn-fantasma">← Continuar comprando</a>' +
+          '<a href="/" class="btn-fantasma">← Continuar comprando</a>' +
           '<button class="btn-perigo-suave" onclick="limparCarrinho()">🗑 Limpar carrinho</button>' +
         '</div>' +
       '</div>' +
@@ -98,10 +98,10 @@
   function irParaPagamento() {
     if (!autenticacao.estaLogado()) {
       notificacao.aviso("Faça login para continuar.");
-      setTimeout(function(){ window.location.href = "login.html"; }, 1200);
+      setTimeout(function(){ window.location.href = "/login"; }, 1200);
       return;
     }
-    window.location.href = "pagamento.html";
+    window.location.href = "/pagamento";
   }
 
   renderizarCarrinho();

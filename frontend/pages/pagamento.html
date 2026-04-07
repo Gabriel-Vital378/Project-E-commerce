@@ -331,25 +331,25 @@
     <p style="color:#8a9bbf;margin-bottom:0.5rem">Seu pedido foi realizado com sucesso.</p>
     <p id="msg-metodo-pagamento" style="color:#10b981;font-size:0.875rem;margin-bottom:2rem"></p>
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-      <a href="pedidos.html" style="background:#00d4ff;color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Ver Meus Pedidos</a>
-      <a href="index.html"   style="background:#151d2e;border:1px solid #1e2d45;color:#e8edf5;font-family:'Rajdhani',sans-serif;font-weight:600;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Continuar Comprando</a>
+      <a href="/pedidos" style="background:#00d4ff;color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Ver Meus Pedidos</a>
+      <a href="/"   style="background:#151d2e;border:1px solid #1e2d45;color:#e8edf5;font-family:'Rajdhani',sans-serif;font-weight:600;padding:0.65rem 1.5rem;border-radius:8px;text-decoration:none">Continuar Comprando</a>
     </div>
   </div>
 
 </div>
 
 <script>
-  var URL_API      = "http://localhost:3001/api";
+  var URL_API      = "http://localhost:3000/api";
   var metodoPagamento = "cartao";
   var contadorPix  = null;
 
   // ── Verifica login e carrinho ──
   var token = localStorage.getItem("token");
-  if (!token) { window.location.href = "login.html"; }
+  if (!token) { window.location.href = "/login"; }
 
   var itensCarrinho = [];
   try { itensCarrinho = JSON.parse(localStorage.getItem("carrinho") || "[]"); } catch(e){}
-  if (!itensCarrinho.length) { window.location.href = "carrinho.html"; }
+  if (!itensCarrinho.length) { window.location.href = "/carrinho"; }
 
   // ── Formata moeda ──
   function moeda(v) {

@@ -65,7 +65,7 @@
  
     <p class="text-center" style="font-size:0.875rem;color:#4a5870">
       Não tem conta?
-      <a href="cadastro.html" style="color:#00d4ff;font-weight:500">Cadastre-se grátis</a>
+      <a href="/cadastro" style="color:#00d4ff;font-weight:500">Cadastre-se grátis</a>
     </p>
  
     <div style="margin-top:1.5rem;padding:0.85rem;background:#111827;border-radius:6px;border:1px dashed #1e2d45;font-size:0.75rem;color:#4a5870">
@@ -78,14 +78,14 @@
 </div>
  
 <script>
-  var URL_API = "http://localhost:3001/api";
+  var URL_API = "http://localhost:3000/api";
  
   // Redireciona se já logado
   var tokenSalvo = localStorage.getItem("token");
   if (tokenSalvo) {
     try {
       var u = JSON.parse(localStorage.getItem("usuario"));
-      window.location.href = u.role === "admin" ? "admin.html" : "index.html";
+      window.location.href = u.role === "admin" ? "/admin" : "/";
     } catch(e) {}
   }
  
@@ -163,7 +163,7 @@
       if (dados.success) {
         localStorage.setItem("token",   dados.data.token);
         localStorage.setItem("usuario", JSON.stringify(dados.data.user));
-        window.location.href = dados.data.user.role === "admin" ? "admin.html" : "index.html";
+        window.location.href = dados.data.user.role === "admin" ? "/admin" : "/";
       } else {
         // Erro do servidor (ex: credenciais erradas) → alerta geral
         mostrarAlertaGeral(dados.message || "Email ou senha incorretos.");

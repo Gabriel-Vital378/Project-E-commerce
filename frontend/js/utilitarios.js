@@ -2,7 +2,7 @@
 // utilitarios.js — Módulo central compartilhado por todas as páginas
 // ============================================================
 
-const URL_API = "http://localhost:3001/api";
+const URL_API = "http://localhost:3000/api";
 
 // ============================================================
 // CLIENTE HTTP — faz requisições para o backend
@@ -78,13 +78,13 @@ const autenticacao = {
   sair() {
     localStorage.removeItem("token");
     localStorage.removeItem("usuario");
-    window.location.href = "login.html";
+    window.location.href = "/login";
   },
 
   // Redireciona para login se não autenticado
   exigirLogin() {
     if (!this.estaLogado()) {
-      window.location.href = "login.html";
+      window.location.href = "/login";
       return false;
     }
     return true;
@@ -93,11 +93,11 @@ const autenticacao = {
   // Redireciona se não for admin
   exigirAdmin() {
     if (!this.estaLogado()) {
-      window.location.href = "login.html";
+      window.location.href = "/login";
       return false;
     }
     if (!this.eAdmin()) {
-      window.location.href = "index.html";
+      window.location.href = "/";
       return false;
     }
     return true;
@@ -286,7 +286,7 @@ function construirNavbar() {
     '<nav class="navbar navbar-expand-lg">' +
       '<div class="container">' +
 
-        '<a class="navbar-brand" href="index.html">' +
+        '<a class="navbar-brand" href="/">' +
           '⌨ <span>PERIFÉRICOS</span>' +
           '<span style="color:var(--cor-texto-suave);font-weight:300">.shop</span>' +
         '</a>' +
@@ -304,17 +304,17 @@ function construirNavbar() {
 
           '<div class="d-flex align-items-center gap-2 ms-lg-3">' +
             (logado
-              ? '<a href="carrinho.html" class="btn-carrinho text-decoration-none">' +
+              ? '<a href="/carrinho" class="btn-carrinho text-decoration-none">' +
                   '🛒 Carrinho ' +
                   '<span id="badge-carrinho" style="display:none">0</span>' +
                 '</a>' +
                 (usuario && usuario.role === "admin"
-                  ? '<a href="admin.html" class="btn-fantasma">⚙ Admin</a>'
+                  ? '<a href="/admin" class="btn-fantasma">⚙ Admin</a>'
                   : '') +
-                '<a href="pedidos.html" class="btn-fantasma">📦 Meus Pedidos</a>' +
+                '<a href="/pedidos" class="btn-fantasma">📦 Meus Pedidos</a>' +
                 '<button onclick="autenticacao.sair()" class="btn-perigo-suave">Sair</button>'
-              : '<a href="login.html" class="btn-fantasma">Entrar</a>' +
-                '<a href="cadastro.html" class="btn-destaque">Cadastrar</a>'
+              : '<a href="/login" class="btn-fantasma">Entrar</a>' +
+                '<a href="/cadastro" class="btn-destaque">Cadastrar</a>'
             ) +
           '</div>' +
 
@@ -334,7 +334,7 @@ function construirNavbar() {
       if (e.key === "Enter") {
         const termo = campoBusca.value.trim();
         if (termo) {
-          window.location.href = "index.html?busca=" + encodeURIComponent(termo);
+          window.location.href = "/?busca=" + encodeURIComponent(termo);
         }
       }
     });

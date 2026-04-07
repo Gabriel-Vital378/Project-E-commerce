@@ -78,15 +78,15 @@
  
     <p class="text-center" style="font-size:0.875rem;color:#4a5870">
       Já tem uma conta?
-      <a href="login.html" style="color:#00d4ff;font-weight:500">Fazer login</a>
+      <a href="/login" style="color:#00d4ff;font-weight:500">Fazer login</a>
     </p>
  
   </div>
 </div>
  
 <script>
-  var URL_API = "http://localhost:3001/api";
-  if (localStorage.getItem("token")) window.location.href = "index.html";
+  var URL_API = "http://localhost:3000/api";
+  if (localStorage.getItem("token")) window.location.href = "/";
  
   // ── Validação inline ──
   function mostrarErroCampo(idCampo, idErro, mensagem) {
@@ -196,7 +196,7 @@
       if (dados.success) {
         localStorage.setItem("token",   dados.data.token);
         localStorage.setItem("usuario", JSON.stringify(dados.data.user));
-        window.location.href = "index.html";
+        window.location.href = "/";
       } else {
         // Email já cadastrado → erro no campo email
         if (dados.message && dados.message.includes("email")) {
