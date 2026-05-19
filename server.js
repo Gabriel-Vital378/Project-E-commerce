@@ -9,11 +9,14 @@ const orderRoutes     = require("./routes/orderRoutes");
 const avaliacaoRoutes = require("./routes/avaliacaoRoutes");
 const pedidosRoutes   = require("./src/routes/pedidos");
 
+// Inicia o consumer Kafka em background (graceful fallback se Kafka offline)
+require("./src/consumer/pedidoConsumer");
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-  origin: ["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:3000/pages"],
+  origin: ["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:3000/pages", "http://localhost:5173"],
   credentials: true,
 }));
 app.use(express.json());

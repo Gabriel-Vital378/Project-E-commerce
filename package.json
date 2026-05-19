@@ -6,9 +6,38 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "test": "jest --forceExit --testTimeout=10000",
+    "test:coverage": "jest --forceExit --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --ext .js",
     "seed": "node prisma/seed.js",
     "db:push": "npx prisma db push",
     "db:studio": "npx prisma studio"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "clearMocks": true,
+    "collectCoverageFrom": [
+      "services/**/*.js",
+      "repositories/**/*.js",
+      "controllers/**/*.js",
+      "middlewares/**/*.js",
+      "config/**/*.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "coverageThresholds": {
+      "global": {
+        "lines": 50
+      }
+    }
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
@@ -21,7 +50,10 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "eslint": "^10.4.0",
+    "jest": "^30.4.2",
     "nodemon": "^3.0.2",
-    "prisma": "^5.7.0"
+    "prisma": "^5.7.0",
+    "supertest": "^7.2.2"
   }
 }

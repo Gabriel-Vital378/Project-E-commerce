@@ -276,11 +276,41 @@ const dom = {
 };
 
 // ============================================================
+// TEMA — dark/light com persistência em localStorage
+// ============================================================
+const tema = {
+  CHAVE: "tema",
+
+  obter() {
+    return localStorage.getItem(this.CHAVE) || "escuro";
+  },
+
+  aplicar(valor) {
+    document.documentElement.dataset.tema = valor === "claro" ? "claro" : "";
+    localStorage.setItem(this.CHAVE, valor);
+    const btn = document.getElementById("btn-tema-toggle");
+    if (btn) btn.textContent = valor === "claro" ? "🌙" : "☀";
+  },
+
+  alternar() {
+    this.aplicar(this.obter() === "claro" ? "escuro" : "claro");
+  },
+
+  inicializar() {
+    this.aplicar(this.obter());
+  },
+};
+
+// Aplica tema antes de renderizar para evitar flash
+tema.inicializar();
+
+// ============================================================
 // NAVBAR — gerada dinamicamente em todas as páginas
 // ============================================================
 function construirNavbar() {
   const usuario = autenticacao.obterUsuario();
   const logado  = autenticacao.estaLogado();
+  const icone   = tema.obter() === "claro" ? "🌙" : "☀";
 
   const html =
     '<nav class="navbar navbar-expand-lg">' +
@@ -316,6 +346,9 @@ function construirNavbar() {
               : '<a href="/login" class="btn-fantasma">Entrar</a>' +
                 '<a href="/cadastro" class="btn-destaque">Cadastrar</a>'
             ) +
+            '<button id="btn-tema-toggle" class="btn-tema" title="Alternar tema" onclick="tema.alternar()">' +
+              icone +
+            '</button>' +
           '</div>' +
 
         '</div>' +

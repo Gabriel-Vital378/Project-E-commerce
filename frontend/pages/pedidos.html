@@ -104,7 +104,7 @@
               '<span style="font-size:0.8rem;color:#4a5870">'+formatar.data(pedido.createdAt)+'</span>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">' +
-              '<span style="font-size:0.7rem;padding:0.2rem 0.65rem;border-radius:50px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:'+st.bg+';color:'+st.cor+';border:1px solid '+st.borda+'">'+pedido.status.replace("_"," ")+'</span>' +
+              '<span id="status-pedido-'+pedido.id+'" style="font-size:0.7rem;padding:0.2rem 0.65rem;border-radius:50px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;background:'+st.bg+';color:'+st.cor+';border:1px solid '+st.borda+'">'+pedido.status.replace("_"," ")+'</span>' +
               '<span style="font-size:0.8rem;color:#4a5870">'+(iconeMetodo[pedido.metodoPagamento]||"💳")+' '+(nomeMetodo[pedido.metodoPagamento]||pedido.metodoPagamento)+'</span>' +
               '<span style="font-family:var(--fonte-titulo);font-size:1.1rem;font-weight:700;color:#00d4ff">'+formatar.moeda(pedido.total)+'</span>' +
             '</div>' +
@@ -148,6 +148,44 @@
   }
 
   carregarPedidos();
+
+  // ── SSE: recebe atualizações de status em tempo real ──
+  var fonteSSE = null;
+
+  function conectarSSE() {
+    var token = autenticacao.obterToken();
+    if (!token || fonteSSE) return;
+
+    fonteSSE = new EventSource("/api/orders/stream?token=" + encodeURIComponent(token));
+
+    fonteSSE.onmessage = function(e) {
+      var dados = JSON.parse(e.data);
+      if (dados.tipo === "conectado") return;
+
+      // Atualiza o badge de status do pedido sem recarregar a página
+      var badgeStatus = document.getElementById("status-pedido-" + dados.pedidoId);
+      if (badgeStatus) {
+        var novasCores = coresStatus[dados.status] || coresStatus.confirmado;
+        badgeStatus.style.background = novasCores.bg;
+        badgeStatus.style.color = novasCores.cor;
+        badgeStatus.style.borderColor = novasCores.borda;
+        badgeStatus.textContent = dados.status.replace("_", " ");
+
+        notificacao.info("Pedido #" + dados.pedidoId + " atualizado: " + dados.status.replace("_", " "));
+      } else {
+        // Pedido não está na tela ainda — recarrega a lista
+        carregarPedidos();
+      }
+    };
+
+    fonteSSE.onerror = function() {
+      // Kafka offline — fecha silenciosamente, sem impacto ao usuário
+      fonteSSE.close();
+      fonteSSE = null;
+    };
+  }
+
+  conectarSSE();
 </script>
 </body>
 </html>

@@ -6,6 +6,7 @@
 
 const OrderRepository   = require("../repositories/orderRepository");
 const ProductRepository = require("../repositories/productRepository");
+const { publicarPedido } = require("../src/producer/pedidoProducer");
 
 const OrderService = {
 
@@ -33,7 +34,17 @@ const OrderService = {
       total += produto.price * item.quantity;
     }
 
-    return await OrderRepository.create(usuarioId, itensPedido, total, metodoPagamento || "cartao");
+    const pedidoCriado = await OrderRepository.create(usuarioId, itensPedido, total, metodoPagamento || "cartao");
+
+    // Publica no Kafka de forma assíncrona — não bloqueia a resposta HTTP
+    publicarPedido({
+      id:       pedidoCriado.id,
+      userId:   Number(usuarioId),
+      status:   pedidoCriado.status,
+      total:    pedidoCriado.total,
+    }).catch((err) => console.warn("Kafka publish falhou (sem impacto ao cliente):", err.message));
+
+    return pedidoCriado;
   },
 
   /**
